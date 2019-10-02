@@ -6,5 +6,3 @@ def create_db(schema: str):
 
   db.executemany(schema)
   db.commit()
-
-
