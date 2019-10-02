@@ -1,4 +1,4 @@
-from flask import request, Request
+from flask import request, Request, g
 from sqlite3 import Connection
 
 # Allow typing for request object

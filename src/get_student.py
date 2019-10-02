@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, Response
+from helpers import getDb
 
 ### Define a classic route, and receive Flask app
 def get_student_routes(app: Flask):
