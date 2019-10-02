@@ -3,6 +3,7 @@ from flask_cors import CORS
 import argparse
 from helpers import getRequest
 import sqlite3
+from database_creator import create
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--port", type=int, default=3501, help="Port")
@@ -12,6 +13,9 @@ program_args = parser.parse_args()
 
 app = Flask("promo-app-server")
 CORS(app)
+
+print("Creating database")
+create()
 
 ### Connect/disconnect to database
 @app.teardown_appcontext

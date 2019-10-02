@@ -5,6 +5,15 @@
 		}
 	],
 	"settings": {
-		"python.pythonPath":"./.env/bin/python"
+		"python.pythonPath": "./.env/bin/python",
+		"sqltools.connections": [
+			{
+				"askForPassword": true,
+				"database": "./base.db",
+				"dialect": "SQLite",
+				"name": "Projet"
+			}
+		],
+		"sqltools.useNodeRuntime": true
 	}
 }
