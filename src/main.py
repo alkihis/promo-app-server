@@ -1,13 +1,13 @@
 from flask import Flask, jsonify, g
 from flask_cors import CORS
 import argparse
-from helpers import getRequest
-from test_orm import test
+from helpers import getRequest, clean_db
 from server import app, db_session, init_db
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--port", type=int, default=3501, help="Port")
 parser.add_argument("-d", "--debug", help="Enable debug mode", action="store_true")
+parser.add_argument("-i", "--init", help="Clean and re-init SQLite", action="store_true")
 
 program_args = parser.parse_args()
 CORS(app)
@@ -20,8 +20,11 @@ get_student_routes(app)
 from errors import classic_errors
 classic_errors(app)
 
-# test()
-# init_db()
+if program_args.init:
+  print("Cleaning database")
+  clean_db()
+  print("Init tables")
+  init_db()
 
 @app.teardown_appcontext
 def shutdown_session(e):
