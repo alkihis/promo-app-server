@@ -2,3 +2,4 @@
 db.db
 db.old.db
 __pycache__
+.idea
