@@ -1,5 +1,5 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column, ForeignKey
+from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Entreprise import Entreprise
 from Models.Domaine import Domaine
@@ -8,6 +8,7 @@ from Models.Etudiant import Etudiant
 
 class Stage(db):
   __tablename__ = "stage"
+  query: Query
 
   id_stage = Column(Integer, primary_key=True)
   promo = Column(String, nullable=False)
@@ -58,4 +59,3 @@ class Stage(db):
       'company': self.entreprise,
       'referrer': self.contact
     }
-  

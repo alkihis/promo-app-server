@@ -1,14 +1,10 @@
-from flask import request, Request, g
-from sqlite3 import Connection
+from flask import request, Request
 import os
-import sqlite3
 import datetime
 import timestring
 
-__db__ = None
-
 # Allow typing for request object
-def getRequest() -> Request:
+def get_request() -> Request:
   return request
 
 DATABASE = './db.db'

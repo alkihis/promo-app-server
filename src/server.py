@@ -27,13 +27,21 @@ db = declarative_base()
 db.query = db_session.query_property()
 
 # Import all the models
+# noinspection PyUnresolvedReferences
 import Models.Contact
+# noinspection PyUnresolvedReferences
 import Models.Etudiant
+# noinspection PyUnresolvedReferences
 import Models.Entreprise
+# noinspection PyUnresolvedReferences
 import Models.Emploi
+# noinspection PyUnresolvedReferences
 import Models.Formation
+# noinspection PyUnresolvedReferences
 import Models.Stage
+# noinspection PyUnresolvedReferences
 import Models.Token
+# noinspection PyUnresolvedReferences
 import Models.Domaine
 
 ### Create Flask Server

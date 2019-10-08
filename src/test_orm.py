@@ -1,4 +1,5 @@
-from server import db_session, Etudiant
+from server import db_session
+from Models.Etudiant import Etudiant
 import datetime
 
 

@@ -1,7 +1,7 @@
-from flask import Flask, jsonify, g
+from flask import jsonify
 from flask_cors import CORS
 import argparse
-from helpers import getRequest, clean_db
+from helpers import get_request, clean_db
 from server import app, db_session, init_db
 
 parser = argparse.ArgumentParser()
@@ -33,7 +33,7 @@ def shutdown_session(e):
 #### Main, route
 @app.route('/')
 def main_app():
-  request = getRequest()
+  request = get_request()
 
   return jsonify(
     success=True,

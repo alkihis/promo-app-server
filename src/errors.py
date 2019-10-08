@@ -1,16 +1,16 @@
 from flask import Flask, jsonify
-from typing import Union, Dict
+from typing import Union, Dict, Tuple
 
 # Define a type union
 ACCEPTED_CODES = Union[int, str]
 
 class Errors:
   def __init__(self):
-    self.codes: Dict[str, str] = {
-      1: ['Page not found. Check the URL.', 404],
-      2: ['Resource not found.', 404],
-      3: ['Invalid method. Current HTTP method is not supported for this endpoint.', 405],
-      4: ['Internal server error. Check detail in detail property.', 500],
+    self.codes: Dict[int, Tuple[str, int]] = {
+      1: ('Page not found. Check the URL.', 404),
+      2: ('Resource not found.', 404),
+      3: ('Invalid method. Current HTTP method is not supported for this endpoint.', 405),
+      4: ('Internal server error. Check detail in detail property.', 500),
     }
 
     self.relations = {
@@ -26,9 +26,9 @@ class Errors:
 
     if code in self.codes:
       if data:
-        return jsonify({ 'error': self.codes[code][0], 'code': code, 'detail': data }), self.codes[code][1]
+        return jsonify({'error': self.codes[code][0], 'code': code, 'detail': data}), self.codes[code][1]
 
-      return jsonify({ 'error': self.codes[code][0], 'code': code }), self.codes[code][1]
+      return jsonify({'error': self.codes[code][0], 'code': code}), self.codes[code][1]
     
     raise KeyError(f"Error code {code} does not exists")
 
@@ -51,4 +51,4 @@ def classic_errors(app: Flask):
 
   @app.errorhandler(500)
   def server_error(e):
-    return ERRORS.error("SERVER_ERROR", { 'reason': "Unexpected internal server error", 'error': repr(e) })
+    return ERRORS.error("SERVER_ERROR", {'reason': "Unexpected internal server error", 'error': repr(e)})

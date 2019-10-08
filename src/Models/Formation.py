@@ -1,9 +1,10 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column
+from sqlalchemy.orm import Query
 from server import db
 
 class Formation(db):
   __tablename__ = "formation"
+  query: Query
 
   id_form = Column(Integer, primary_key=True)
   nom = Column(String, nullable=False)

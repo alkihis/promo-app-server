@@ -1,9 +1,10 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column
+from sqlalchemy.orm import Query
 from server import db
 
 class Domaine(db):
   __tablename__ = "domaine"
+  query: Query
 
   id_domaine = Column(Integer, primary_key=True)
   domaine = Column(String, nullable=False)

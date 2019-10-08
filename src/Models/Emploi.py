@@ -1,5 +1,5 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column, ForeignKey
+from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Entreprise import Entreprise
 from Models.Domaine import Domaine
@@ -8,6 +8,7 @@ from Models.Etudiant import Etudiant
 
 class Emploi(db):
   __tablename__ = "emploi"
+  query: Query
 
   id_emploi = Column(Integer, primary_key=True)
   debut = Column(String, nullable=False)

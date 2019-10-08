@@ -1,9 +1,10 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column
+from sqlalchemy.orm import relationship, Query
 from server import db
 
 class Entreprise(db):
   __tablename__ = "entreprise"
+  query: Query
 
   id_entreprise = Column(Integer, primary_key=True)
   nom = Column(String, nullable=False)

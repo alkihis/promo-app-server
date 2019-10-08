@@ -1,11 +1,12 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column, Date, ForeignKey
+from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Formation import Formation
 from datetime import date
 
 class Etudiant(db):
   __tablename__ = "etudiant"
+  query: Query
 
   id_etu = Column(Integer, primary_key=True)
   nom = Column(String, nullable=False)

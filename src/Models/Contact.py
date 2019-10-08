@@ -1,10 +1,11 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Column, ForeignKey
+from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Entreprise import Entreprise
 
 class Contact(db):
   __tablename__ = "contact"
+  query: Query
 
   nom = Column(String, nullable=False)
   id_contact = Column(Integer, primary_key=True)
@@ -28,4 +29,3 @@ class Contact(db):
       'email': self.mail,
       'linked_to': self.id_entreprise
     }
-
