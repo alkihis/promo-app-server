@@ -13,20 +13,25 @@ class Errors:
       4: ('Internal server error. Check detail in detail property.', 500),
       5: ('Invalid password.', 401),
       6: ('Invalid login token.', 401),
-      7: ('Bad request. Check required parameters.', 400),
+      7: ('Bad request. Check required parameters or input format.', 400),
       8: ('Your current credentials does not allow you to access this resource.', 403),
+      9: ('You must be logged to do that, or your login credentials are invalid.', 401),
+      10: ('Missing required parameters.', 400),
     }
 
-    self.relations = {
-      "PAGE_NOT_FOUND": 1,
-      "RESOURCE_NOT_FOUND": 2,
-      "INVALID_METHOD": 3,
-      "SERVER_ERROR": 4,
-      "INVALID_PASSWORD": 5,
-      "INVALID_TOKEN": 6,
-      "BAD_REQUEST": 7,
-      "INVALID_CREDENTIALS": 8,
-    }
+    # index + 1 is error code
+    self.relations = (
+      "PAGE_NOT_FOUND",
+      "RESOURCE_NOT_FOUND",
+      "INVALID_METHOD",
+      "SERVER_ERROR",
+      "INVALID_PASSWORD",
+      "INVALID_TOKEN",
+      "BAD_REQUEST",
+      "INVALID_CREDENTIALS",
+      "NOT_LOGGED",
+      "MISSING_PARAMETERS",
+    )
 
   def error(self, code: ACCEPTED_CODES, data: dict = None):
     if type(code) == str:
@@ -42,20 +47,39 @@ class Errors:
 
   def __str_code_to_int_code(self, code: str) -> int:
     if code in self.relations:
-      return self.relations[code]
+      return self.relations.index(code) + 1
     
     raise KeyError(f"Unable to find error code linked to {code}.")
+
+  def __call__(self, code: ACCEPTED_CODES, data: dict = None):
+    return self.error(code, data)
+
+  def __getattr__(self, name: str):
+    name = name.upper()
+
+    if name in self.relations:
+      return self.error(name)
+
+    raise AttributeError()
 
 ERRORS = Errors()
 
 def classic_errors(app: Flask):
+  @app.errorhandler(400)
+  def catch_400(e):
+    return ERRORS.BAD_REQUEST
+
+  @app.errorhandler(401)
+  def catch_401(e):
+    return ERRORS.NOT_LOGGED
+
   @app.errorhandler(404)
   def catch_404(e):
-    return ERRORS.error("PAGE_NOT_FOUND")
+    return ERRORS.PAGE_NOT_FOUND
 
   @app.errorhandler(405)
   def catch_405(e):
-    return ERRORS.error("INVALID_METHOD")
+    return ERRORS.INVALID_METHOD
 
   @app.errorhandler(500)
   def server_error(e):

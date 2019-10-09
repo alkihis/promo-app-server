@@ -15,14 +15,14 @@ def define_auth_routes(app: flask.Flask):
     # TODO make verif for password
     if r.is_json and 'password' in r.json and r.json['password'] == "DEFINED_PASSWORD":
       # Cherche si un token existe
-      t: Token = Token.query.filter_by(type=True).one_or_none()
+      t: Token = Token.query.filter_by(teacher=True).one_or_none()
 
       if not t:
         ## Create token
         new_token = str(uuid.uuid4())
 
         # Register token
-        t = Token.create(token=new_token, type=True)
+        t = Token.create(token=new_token, teacher=True)
         db_session.add(t)
         db_session.commit()
 
@@ -30,6 +30,7 @@ def define_auth_routes(app: flask.Flask):
     else:
       return ERRORS.error("INVALID_PASSWORD")
 
+  ## Validate (check validity) a token
   @app.route('/auth/validate', methods=['POST'])
   def login_for_student():
     r = get_request()
@@ -49,7 +50,7 @@ def define_auth_routes(app: flask.Flask):
     else:
       return ERRORS.error("BAD_REQUEST")
 
-
+  # Redirect to home (useless)
   @app.route('/auth/redirect')
   def redirect_to_logged():
     r = get_request()
@@ -59,7 +60,8 @@ def define_auth_routes(app: flask.Flask):
     else:
       return "", 401
 
-  @app.route('/auth/<token>', methods=["DELETE"])
+  ## Invalidate a token (remove the possibility of login)
+  @app.route('/auth/token', methods=["DELETE"])
   @login_required
   def invalidate_token():
     if is_teacher():
@@ -79,7 +81,39 @@ def define_auth_routes(app: flask.Flask):
       else:
         return ERRORS.error("INVALID_CREDENTIALS")
 
-  ## TODO REMOVE
+  ## Get all tokens linked to logged user
   @app.route('/token/all')
+  @login_required
   def see_token():
-    return flask.jsonify(Token.query.all())
+    page = 0
+    length = 20
+    r = get_request()
+
+    if r.args.get('page') is not None:
+      try:
+        choosen_page = int(r.args.get('page'))
+
+        if choosen_page >= 0:
+          page = choosen_page
+      except:
+        return ERRORS.BAD_REQUEST
+
+    if r.args.get('count') is not None:
+      try:
+        choosen_count = int(r.args.get('count'))
+
+        if choosen_count > 0 and choosen_count <= 100:
+          length = choosen_count
+      except:
+        return ERRORS.BAD_REQUEST
+
+    start = page * length
+    end = (page + 1) * length
+
+    # Teachers are allowed to see tokens of all users (may be heavy)
+    if is_teacher():
+      return flask.jsonify(Token.query.all()[start:end])
+
+    # Send all tokens of logged user
+    id_etu = get_user().id_etu
+    return flask.jsonify(Token.query.filter_by(id_etu=id_etu).all()[start:end])

@@ -21,12 +21,6 @@ def get_student_routes(app: Flask):
     db_session.add(etu)
     db_session.commit()
 
-    ## Crée un token pour l'étudiant
-    new_token = str(uuid.uuid4())
-    t = Token.create(token=new_token, type=False, id_etu=etu.id_etu)
-    db_session.add(t)
-    db_session.commit()
-
     return jsonify(etu)
     
   @app.route('/student/all')

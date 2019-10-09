@@ -16,7 +16,7 @@ def _default(self, obj):
     return getattr(obj.__class__, "to_json", _default.default)(obj)
 
 _default.default = JSONEncoder.default  # Save unmodified default.
-JSONEncoder.default = _default # Replace it.
+JSONEncoder.default = _default # Replace it
 
 ##### End JSON encoder
 

@@ -96,7 +96,7 @@ CREATE TABLE Emploi (
 CREATE TABLE Token (
   token TEXT NOT NULL PRIMARY KEY,
   id_etu INTEGER,
-  type INTEGER, -- 1 for teacher, 0 for student
+  teacher INTEGER, -- 1 for teacher, 0 for student
 
   FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu)
 );

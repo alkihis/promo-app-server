@@ -9,7 +9,7 @@ class Token(db):
 
   token = Column(String, primary_key=True)
 
-  type = Column(Boolean, nullable=False)
+  teacher = Column(Boolean, nullable=False)
 
   id_etu = Column(
     Integer,
@@ -19,12 +19,12 @@ class Token(db):
   etudiant: Etudiant = relationship('Etudiant', foreign_keys=[id_etu])
 
   @staticmethod
-  def create(token: str, type: bool, id_etu: int = None):
-    return Token(token=token, type=type, id_etu=id_etu)
+  def create(token: str, teacher: bool, id_etu: int = None):
+    return Token(token=token, teacher=teacher, id_etu=id_etu)
 
   def to_json(self):
     return {
       'token': self.token,
       'student': self.etudiant,
-      'type': 'teacher' if self.type else 'student'
+      'type': 'teacher' if self.teacher else 'student'
     }

@@ -3,3 +3,4 @@ db.db
 db.*.db
 __pycache__
 .idea
+.vscode
