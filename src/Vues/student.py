@@ -2,7 +2,7 @@ import flask
 from Models.Etudiant import Etudiant
 from Models.Formation import Formation
 from flask_login import login_required
-from helpers import is_teacher, get_request, create_token_for, convert_date
+from helpers import is_teacher, get_request, get_user, create_token_for, convert_date
 from errors import ERRORS
 from server import db_session
 from sqlalchemy import and_, or_
@@ -57,6 +57,78 @@ def student_routes(app: flask.Flask):
 
     # Return the newly created student
     return flask.jsonify(etu)
+
+
+  @app.route('/student/update', methods=['POST'])
+  @login_required
+  def update_student():
+    r = get_request()
+    student: Etudiant = None
+
+    if not r.is_json:
+      return ERRORS.BAD_REQUEST
+
+    if is_teacher():
+      if 'user_id' in r.args:
+        user_id = int(r.args['user_id'])
+        st = Etudiant.query.filter_by(id_etu=user_id).one_or_none()
+
+        if st:
+          student = st
+        else:
+          return ERRORS.RESOURCE_NOT_FOUND
+      else:
+        return ERRORS.MISSING_PARAMETERS
+    else:
+      student = Etudiant.query.filter_by(id_etu=get_user().id_etu).first()
+
+    data = r.json
+
+    if 'first_name' in data:
+      # TODO Check validity
+      student.prenom = data['first_name']
+    if 'last_name' in data:
+      # Check validity
+      student.nom = data['last_name']
+    if 'promo_in' in data:
+      # Check validity
+      student.promo_entree = data['promo_in']
+    if 'promo_out' in data:
+      student.promo_sortie = data['promo_out']
+    if 'email' in data:
+      student.mail = data['email']
+    if 'previous_formation' in data:
+      if type(data['previous_formation']) == int:
+        # Check existance of formation
+        desired = Formation.query.filter_by(id_form=data['previous_formation']).one_or_none()
+
+        if desired:
+          student.cursus_anterieur = data['previous_formation']
+        else:
+          return ERRORS.RESOURCE_NOT_FOUND
+      elif data['previous_formation'] is None:
+        student.cursus_anterieur = None
+      else:
+        return ERRORS.BAD_REQUEST
+    if 'next_formation' in data:
+      if type(data['next_formation']) == int:
+        # Check existance of formation
+        desired = Formation.query.filter_by(id_form=data['next_formation']).one_or_none()
+
+        if desired:
+          student.reorientation = data['next_formation']
+        else:
+          return ERRORS.RESOURCE_NOT_FOUND
+      elif data['next_formation'] is None:
+        student.reorientation = None
+      else:
+        return ERRORS.BAD_REQUEST
+
+    # Save changes
+    db_session.commit()
+    
+    return flask.jsonify(student)
+
 
   @app.route('/student/search')
   @login_required
