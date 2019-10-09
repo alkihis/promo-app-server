@@ -9,7 +9,7 @@
 		"sqltools.connections": [
 			{
 				"askForPassword": true,
-				"database": "./base.db",
+				"database": "./db.db",
 				"dialect": "SQLite",
 				"name": "Projet"
 			}

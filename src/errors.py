@@ -11,6 +11,10 @@ class Errors:
       2: ('Resource not found.', 404),
       3: ('Invalid method. Current HTTP method is not supported for this endpoint.', 405),
       4: ('Internal server error. Check detail in detail property.', 500),
+      5: ('Invalid password.', 401),
+      6: ('Invalid login token.', 401),
+      7: ('Bad request. Check required parameters.', 400),
+      8: ('Your current credentials does not allow you to access this resource.', 403),
     }
 
     self.relations = {
@@ -18,6 +22,10 @@ class Errors:
       "RESOURCE_NOT_FOUND": 2,
       "INVALID_METHOD": 3,
       "SERVER_ERROR": 4,
+      "INVALID_PASSWORD": 5,
+      "INVALID_TOKEN": 6,
+      "BAD_REQUEST": 7,
+      "INVALID_CREDENTIALS": 8,
     }
 
   def error(self, code: ACCEPTED_CODES, data: dict = None):

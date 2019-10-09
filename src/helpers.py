@@ -2,12 +2,17 @@ from flask import request, Request
 import os
 import datetime
 import timestring
+from flask_login import current_user
 
 # Allow typing for request object
 def get_request() -> Request:
   return request
 
-DATABASE = './db.db'
+def get_user():
+  return current_user
+
+def is_teacher() -> bool:
+  return not get_user().id_etu
 
 def clean_db():
   current_date = datetime.date.today()

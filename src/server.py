@@ -1,5 +1,5 @@
 from flask import Flask
-from helpers import DATABASE
+from const import DATABASE
 from sqlalchemy import create_engine, Integer, String, Boolean, Column, Date, ForeignKey
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -27,25 +27,20 @@ db = declarative_base()
 db.query = db_session.query_property()
 
 # Import all the models
-# noinspection PyUnresolvedReferences
 import Models.Contact
-# noinspection PyUnresolvedReferences
 import Models.Etudiant
-# noinspection PyUnresolvedReferences
 import Models.Entreprise
-# noinspection PyUnresolvedReferences
 import Models.Emploi
-# noinspection PyUnresolvedReferences
 import Models.Formation
-# noinspection PyUnresolvedReferences
 import Models.Stage
-# noinspection PyUnresolvedReferences
 import Models.Token
-# noinspection PyUnresolvedReferences
 import Models.Domaine
 
 ### Create Flask Server
 app = Flask("promo-app-server")
+
+from login_handler import set_app_login_manager
+set_app_login_manager(app)
 
 def init_db():
   db.metadata.create_all(bind=engine)

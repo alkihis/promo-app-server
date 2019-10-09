@@ -1,6 +1,6 @@
 python3 -m venv .env
 source .env/bin/activate
-pip install flask flask-cors flask-login Flask-SQLAlchemy timestring
+pip install flask flask-cors flask-login Flask-SQLAlchemy timestring blinker
 
 ## Ready
 echo "Virtual env is ready."

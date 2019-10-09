@@ -14,11 +14,17 @@ CORS(app)
 
 #### Init modules
 ## Import the module and the apply function, and give app
-from get_student import get_student_routes
+from Vues.get_student import get_student_routes
 get_student_routes(app)
 
 from errors import classic_errors
 classic_errors(app)
+
+from Vues.auth import define_auth_routes
+define_auth_routes(app)
+
+from Vues.student import student_routes
+student_routes(app)
 
 if program_args.init:
   print("Cleaning database")

@@ -21,3 +21,10 @@ class Token(db):
   @staticmethod
   def create(token: str, type: bool, id_etu: int = None):
     return Token(token=token, type=type, id_etu=id_etu)
+
+  def to_json(self):
+    return {
+      'token': self.token,
+      'student': self.etudiant,
+      'type': 'teacher' if self.type else 'student'
+    }

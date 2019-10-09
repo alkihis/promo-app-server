@@ -26,15 +26,6 @@ class Etudiant(db):
   )
   reorientation_obj: Formation = relationship('Formation', foreign_keys=[reorientation])
 
-  def __init__(self, **kwargs):
-    super(Etudiant, self).__init__(**kwargs)
-    self.is_authenticated = True
-    self.is_active = True
-    self.is_anonymous = False
-
-  def get_id(self) -> str:
-    return str(self.id_etu)
-
   @staticmethod
   def create(
     nom: str, 
@@ -60,8 +51,8 @@ class Etudiant(db):
   def to_json(self):
     return {
       'id': self.id_etu,
-      'name': self.nom,
-      'surname': self.prenom,
+      'last_name': self.nom,
+      'first_name': self.prenom,
       'promo_in': self.promo_entree,
       'promo_out': self.promo_sortie,
       'email': self.mail,
