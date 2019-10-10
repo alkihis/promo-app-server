@@ -15,28 +15,28 @@ class Stage(db):
   
   id_entreprise = Column(
     Integer,
-    ForeignKey('entreprise.id_entreprise'),
+    ForeignKey('entreprise.id_entreprise', ondelete='SET NULL'),
     nullable=False
   )
   entreprise: Entreprise = relationship('Entreprise', back_populates="stages")
 
   id_domaine = Column(
     Integer,
-    ForeignKey('domaine.id_domaine'),
+    ForeignKey('domaine.id_domaine', ondelete='SET NULL'),
     nullable=False
   )
   domaine: Domaine = relationship('Domaine')
 
   id_contact = Column(
     Integer,
-    ForeignKey('contact.id_contact'),
+    ForeignKey('contact.id_contact', ondelete='SET NULL'),
     nullable=False
   )
   contact: Contact = relationship('Contact')
 
   id_etu = Column(
     Integer,
-    ForeignKey('etudiant.id_etu'),
+    ForeignKey('etudiant.id_etu', ondelete='CASCADE'),
     nullable=False
   )
   etudiant: Etudiant = relationship('Etudiant')

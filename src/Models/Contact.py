@@ -13,7 +13,7 @@ class Contact(db):
 
   id_entreprise = Column(
     Integer,
-    ForeignKey('entreprise.id_entreprise'),
+    ForeignKey('entreprise.id_entreprise', ondelete='CASCADE'),
     nullable=False
   )
   entreprise: Entreprise = relationship('Entreprise')
