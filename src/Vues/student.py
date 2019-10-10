@@ -35,11 +35,11 @@ def student_routes(app: flask.Flask):
     data = r.json
 
     # Si toutes ces clés ne sont pas présentes dans le dict
-    if not {'first_name', 'last_name', 'email', 'year_in', 'birthdate'} <= set(data):
+    if not {'first_name', 'last_name', 'email', 'year_in', 'birthdate', 'entered_in'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
     first_name, last_name, email = data['first_name'], data['last_name'], data['email']
-    year_in, birthdate = data['year_in'], data['birthdate']
+    year_in, birthdate, entree = data['year_in'], data['birthdate'], data['entered_in']
 
     # Do not forget to change datestring to date object !
     birthdate = convert_date(birthdate)
@@ -47,7 +47,7 @@ def student_routes(app: flask.Flask):
     ## TODO CHECK PROMO, CHECK EMAIL VALIDITY
 
     # Create student
-    etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, birthdate=birthdate, annee_entree=year_in)
+    etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, birthdate=birthdate, annee_entree=year_in, entree_en_m1=entree == "M1")
 
     db_session.add(etu)
     db_session.commit()

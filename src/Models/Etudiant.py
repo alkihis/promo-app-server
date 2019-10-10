@@ -12,7 +12,7 @@ class Etudiant(db):
   nom = Column(String, nullable=False)
   prenom = Column(String, nullable=False)
   mail = Column(String, nullable=False)
-  birthdate = Column(Date, nullable=False)
+  birthdate = Column(Date)
   annee_entree = Column(String, nullable=False)
   annee_sortie = Column(String)
   entree_en_m1 = Column(Boolean, nullable=False)

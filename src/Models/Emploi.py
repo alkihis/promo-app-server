@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Column, ForeignKey, Date
+from sqlalchemy import Integer, String, Column, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Entreprise import Entreprise
@@ -16,6 +16,8 @@ class Emploi(db):
   fin = Column(Date)
   contrat = Column(String, nullable=False)
   salaire = Column(Integer)
+  is_public = Column(Boolean, nullable=False)
+  niveau = Column(String, nullable=False)
   
   id_entreprise = Column(
     Integer,
