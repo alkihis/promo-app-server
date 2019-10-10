@@ -13,7 +13,7 @@ class Token(db):
 
   id_etu = Column(
     Integer,
-    ForeignKey('etudiant.id_etu'),
+    ForeignKey('etudiant.id_etu', ondelete="CASCADE"),
     nullable=True
   )
   etudiant: Etudiant = relationship('Etudiant', foreign_keys=[id_etu])

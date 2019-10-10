@@ -13,8 +13,8 @@ CREATE TABLE Etudiant (
   cursus_anterieur INTEGER,
   reorientation INTEGER,
 
-  FOREIGN KEY(cursus_anterieur) REFERENCES Formation(id_form),
-  FOREIGN KEY(reorientation) REFERENCES Formation(id_form)
+  FOREIGN KEY(cursus_anterieur) REFERENCES Formation(id_form) ON DELETE SET NULL,
+  FOREIGN KEY(reorientation) REFERENCES Formation(id_form) ON DELETE SET NULL
 );
 
 CREATE TABLE Formation (
@@ -30,7 +30,7 @@ CREATE TABLE Contact (
 
   id_entreprise INTEGER NOT NULL,
 
-  FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise)
+  FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise) ON DELETE CASCADE
 );
 
 CREATE TABLE Entreprise (
@@ -70,10 +70,10 @@ CREATE TABLE Stage (
   id_domaine INTEGER NOT NULL,
   id_entreprise INTEGER NOT NULL,
 
-  FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu),
-  FOREIGN KEY(id_contact) REFERENCES Contact(id_contact),
-  FOREIGN KEY(id_domaine) REFERENCES Domaine(id_domaine),
-  FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise)
+  FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE,
+  FOREIGN KEY(id_contact) REFERENCES Contact(id_contact) ON DELETE SET NULL,
+  FOREIGN KEY(id_domaine) REFERENCES Domaine(id_domaine) ON DELETE SET NULL,
+  FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise) ON DELETE SET NULL
 );
 
 CREATE TABLE Emploi (
@@ -88,10 +88,10 @@ CREATE TABLE Emploi (
   contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance" TODO VOIR CONTRATS
   salaire INTEGER, -- Peut être non précisé
 
-  FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu),
-  FOREIGN KEY(id_contact) REFERENCES Contact(id_contact),
-  FOREIGN KEY(id_domaine) REFERENCES Domaine(id_domaine),
-  FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise)
+  FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE,
+  FOREIGN KEY(id_contact) REFERENCES Contact(id_contact) ON DELETE SET NULL,
+  FOREIGN KEY(id_domaine) REFERENCES Domaine(id_domaine) ON DELETE SET NULL,
+  FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise) ON DELETE SET NULL
 );
 
 CREATE TABLE Token (
@@ -99,5 +99,5 @@ CREATE TABLE Token (
   id_etu INTEGER,
   teacher INTEGER, -- 1 for teacher, 0 for student
 
-  FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu)
+  FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE
 );

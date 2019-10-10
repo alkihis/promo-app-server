@@ -22,7 +22,10 @@ def clean_db():
 
   current_date = datetime.date.today()
 
-  os.rename(DATABASE, DATABASE.replace('.db', '.' + current_date.strftime('%Y-%m-%d') + '.db'))
+  try:
+    os.rename(DATABASE, DATABASE.replace('.db', '.' + current_date.strftime('%Y-%m-%d') + '.db'))
+  except:
+    pass
   f = open(DATABASE, "w")
   f.write("")
   f.close()
