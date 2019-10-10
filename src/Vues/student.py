@@ -31,15 +31,15 @@ def student_routes(app: flask.Flask):
       return ERRORS.BAD_REQUEST
 
     # Check presence of required arguments
-    # Required are first_name, last_name, email, promo_in, birthdate 
+    # Required are first_name, last_name, email, year_in, birthdate 
     data = r.json
 
     # Si toutes ces clés ne sont pas présentes dans le dict
-    if not {'first_name', 'last_name', 'email', 'promo_in', 'birthdate'} <= set(data):
+    if not {'first_name', 'last_name', 'email', 'year_in', 'birthdate'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
     first_name, last_name, email = data['first_name'], data['last_name'], data['email']
-    promo_in, birthdate = data['promo_in'], data['birthdate']
+    year_in, birthdate = data['year_in'], data['birthdate']
 
     # Do not forget to change datestring to date object !
     birthdate = convert_date(birthdate)
@@ -47,7 +47,7 @@ def student_routes(app: flask.Flask):
     ## TODO CHECK PROMO, CHECK EMAIL VALIDITY
 
     # Create student
-    etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, birthdate=birthdate, promo_entree=promo_in)
+    etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, birthdate=birthdate, annee_entree=year_in)
 
     db_session.add(etu)
     db_session.commit()
@@ -90,11 +90,11 @@ def student_routes(app: flask.Flask):
     if 'last_name' in data:
       # Check validity
       student.nom = data['last_name']
-    if 'promo_in' in data:
+    if 'year_in' in data:
       # Check validity
-      student.promo_entree = data['promo_in']
-    if 'promo_out' in data:
-      student.promo_sortie = data['promo_out']
+      student.annee_entree = data['year_in']
+    if 'year_out' in data:
+      student.annee_sortie = data['year_out']
     if 'email' in data:
       student.mail = data['email']
     if 'previous_formation' in data:
@@ -157,17 +157,17 @@ def student_routes(app: flask.Flask):
         return ERRORS.BAD_REQUEST
 
     # Search for search parameters in request
-    # name, promo_in, promo_out, previous_formation
+    # name, year_in, year_out, previous_formation
 
     arguments_for_search = []
 
     # Constructing search
     if 'name' in r.args:
       arguments_for_search.append(or_(Etudiant.nom.ilike('%' + r.args['name'] + '%'), Etudiant.prenom.ilike('%' + r.args['name'] + '%')))
-    if 'promo_in' in r.args:
-      arguments_for_search.append(Etudiant.promo_entree == r.args['promo_in'])
-    if 'promo_out' in r.args:
-      arguments_for_search.append(Etudiant.promo_sortie == r.args['promo_out'])
+    if 'year_in' in r.args:
+      arguments_for_search.append(Etudiant.annee_entree == r.args['year_in'])
+    if 'year_out' in r.args:
+      arguments_for_search.append(Etudiant.annee_sortie == r.args['year_out'])
     if 'previous_formation' in r.args:
       arguments_for_search.append(
         and_(

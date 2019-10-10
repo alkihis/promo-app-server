@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Column, Date, ForeignKey
+from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
 from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Formation import Formation
@@ -13,8 +13,9 @@ class Etudiant(db):
   prenom = Column(String, nullable=False)
   mail = Column(String, nullable=False)
   birthdate = Column(Date, nullable=False)
-  promo_entree = Column(String, nullable=False)
-  promo_sortie = Column(String)
+  annee_entree = Column(String, nullable=False)
+  annee_sortie = Column(String)
+  entree_en_m1 = Column(Boolean, nullable=False)
 
   cursus_anterieur = Column(Integer,
     ForeignKey('formation.id_form')
@@ -32,8 +33,9 @@ class Etudiant(db):
     prenom: str, 
     mail: str, 
     birthdate: date, 
-    promo_entree: str, 
-    promo_sortie: str = None, 
+    annee_entree: str, 
+    entree_en_m1: bool,
+    annee_sortie: str = None, 
     cursus_anterieur: int = None,
     reorientation: int = None
   ):
@@ -42,10 +44,11 @@ class Etudiant(db):
       prenom=prenom, 
       mail=mail, 
       birthdate=birthdate, 
-      promo_entree=promo_entree,
-      promo_sortie=promo_sortie,
+      annee_entree=annee_entree,
+      annee_sortie=annee_sortie,
       cursus_anterieur=cursus_anterieur,
-      reorientation=reorientation
+      reorientation=reorientation,
+      entree_en_m1=entree_en_m1
     )
 
   def to_json(self):
@@ -53,8 +56,9 @@ class Etudiant(db):
       'id': self.id_etu,
       'last_name': self.nom,
       'first_name': self.prenom,
-      'promo_in': self.promo_entree,
-      'promo_out': self.promo_sortie,
+      'year_in': self.annee_entree,
+      'year_out': self.annee_sortie,
+      'entered_in': "M1" if self.entree_en_m1 else "M2",
       'email': self.mail,
       'previous_formation': None if not self.cursus_obj else self.cursus_obj.to_json(),
       'next_formation': None if not self.reorientation_obj else self.reorientation_obj.to_json()
