@@ -6,6 +6,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from datetime import date
 from json import JSONEncoder
 
+## File for creating/enabling connection to SQLite database, define ORM models, affect it to Flask app.
+
 ##### Define a JSON encoder
 """ Module that monkey-patches json module when it's imported so
 JSONEncoder.default() automatically checks for a special "to_json()"
@@ -39,8 +41,19 @@ import Models.Domaine
 ### Create Flask Server
 app = Flask("promo-app-server")
 
-from login_handler import set_app_login_manager
-set_app_login_manager(app)
+# Database cleaner
+def clean_db():
+  from const import DATABASE
+
+  current_date = date.today()
+
+  try:
+    os.rename(DATABASE, DATABASE.replace('.db', '.' + current_date.strftime('%Y-%m-%d') + '.db'))
+  except:
+    pass
+  f = open(DATABASE, "w")
+  f.write("")
+  f.close()
 
 def init_db():
   db.metadata.create_all(bind=engine)

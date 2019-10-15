@@ -17,19 +17,6 @@ def get_user():
 def is_teacher() -> bool:
   return get_user().teacher
 
-def clean_db():
-  from const import DATABASE
-
-  current_date = datetime.date.today()
-
-  try:
-    os.rename(DATABASE, DATABASE.replace('.db', '.' + current_date.strftime('%Y-%m-%d') + '.db'))
-  except:
-    pass
-  f = open(DATABASE, "w")
-  f.write("")
-  f.close()
-
 def convert_datetime(date: str) -> datetime.datetime:
   return timestring.Date(date).date
 

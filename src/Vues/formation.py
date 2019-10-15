@@ -43,7 +43,6 @@ def define_formation_endpoints(app: flask.Flask):
 
     return flask.jsonify(form), 201
 
-
   @app.route('/formation/all')
   @login_required
   def fetch_locations():
@@ -176,11 +175,4 @@ def define_formation_endpoints(app: flask.Flask):
     accepted.sort(key=lambda x: max((x[1]['name'], x[1]['location'])), reverse=True)
 
     return flask.jsonify(accepted)
-
-def attach_previous_formation(id_etu: int, id_form: int):
-  e: Etudiant = Etudiant.query.filter_by(id_etu=id_etu).one_or_none()
-
-  if e:
-    e.cursus_anterieur = id_form
-    db_session.commit()
 

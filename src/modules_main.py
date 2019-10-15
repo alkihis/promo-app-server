@@ -1,18 +1,20 @@
-from flask import jsonify
+from flask import jsonify, request
 from flask_cors import CORS
-import argparse
-from helpers import get_request, clean_db
-from server import app, db_session, init_db
+from server import app, db_session
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--port", type=int, default=3501, help="Port")
-parser.add_argument("-d", "--debug", help="Enable debug mode", action="store_true")
-parser.add_argument("-i", "--init", help="Clean and re-init SQLite", action="store_true")
+if __name__ == "__main__":
+  print("Please run app.py instead. This should not be the main file.")
+  exit()
 
-program_args = parser.parse_args()
+## Module initializer
+#### Init modules
+# Make app CORS-ready
 CORS(app)
 
-#### Init modules
+# Init the login manager
+from login_handler import set_app_login_manager
+set_app_login_manager(app)
+
 ## Import the module and the apply function, and give app
 from Vues.get_student import get_student_routes
 # get_student_routes(app)
@@ -29,12 +31,6 @@ student_routes(app)
 from Vues.formation import define_formation_endpoints
 define_formation_endpoints(app)
 
-if program_args.init:
-  print("Cleaning database")
-  clean_db()
-  print("Init tables")
-  init_db()
-
 @app.teardown_appcontext
 def shutdown_session(e):
     db_session.remove()
@@ -42,8 +38,6 @@ def shutdown_session(e):
 #### Main, route
 @app.route('/')
 def main_app():
-  request = get_request()
-
   return jsonify(
     success=True,
     path=request.path,
@@ -54,6 +48,3 @@ def main_app():
     json_form_data=request.json,
     attached_files=request.files
   )
-
-# Run integrated Flask server
-app.run(host='0.0.0.0', port=program_args.port, debug=program_args.debug)
