@@ -8,6 +8,7 @@ from server import db_session
 from sqlalchemy import and_
 import Levenshtein
 from typing import List, Tuple, Dict
+from models_helpers import get_etu_object_for_logged_user
 
 def define_formation_endpoints(app: flask.Flask):
   @app.route('/formation/create', methods=["POST"])
@@ -33,15 +34,12 @@ def define_formation_endpoints(app: flask.Flask):
     f = Formation.query.filter(and_(Formation.nom.ilike(f"{name}"), Formation.lieu.ilike(f"{location}"))).all()
 
     if len(f):
-      attach_previous_formation(user_id, f[0].id_form)
       return flask.jsonify(f[0]), 200
 
     # Create new formation
     form = Formation.create(nom=name, lieu=location)
     db_session.add(form)
     db_session.commit()
-
-    attach_previous_formation(user_id, form.id_form)
 
     return flask.jsonify(form), 201
 
@@ -50,6 +48,89 @@ def define_formation_endpoints(app: flask.Flask):
   @login_required
   def fetch_locations():
     return flask.jsonify(Formation.query.all())
+
+  @app.route('/formation/before', methods=["POST"])
+  @login_required
+  def attach_formation():
+    user_id = get_user().id_etu
+    r = get_request()
+
+    if not 'id' in r.args:
+      return ERRORS.MISSING_PARAMETERS
+
+    form_id = r.args.get('id', None, type=int)
+
+    # Get logged etudiant
+    etudiant = get_etu_object_for_logged_user()
+
+    if not etudiant:
+      return ERRORS.SERVER_ERROR
+
+    # Find formation
+    if form_id: 
+      formation = Formation.query.filter_by(id_form=form_id).one_or_none()
+      if not formation:
+        return ERRORS.RESOURCE_NOT_FOUND
+
+    etudiant.cursus_anterieur = form_id
+    db_session.commit()
+
+    return flask.jsonify(etudiant)
+      
+  @app.route('/formation/after', methods=["POST"])
+  @login_required
+  def attach_reorientation():
+    r = get_request()
+
+    if not 'id' in r.args:
+      return ERRORS.MISSING_PARAMETERS
+
+    form_id = r.args.get('id', None, type=int)
+
+    # Get logged etudiant
+    etudiant = get_etu_object_for_logged_user()
+
+    if not etudiant:
+      return ERRORS.SERVER_ERROR
+
+    # Find formation
+    if form_id: 
+      formation = Formation.query.filter_by(id_form=form_id).one_or_none()
+      if not formation:
+        return ERRORS.RESOURCE_NOT_FOUND
+
+    etudiant.reorientation = form_id
+    db_session.commit()
+
+    return flask.jsonify(etudiant)
+
+  @app.route('/formation/before', methods=["DELETE"])
+  @login_required
+  def detach_formation():
+    # Get logged etudiant
+    etudiant = get_etu_object_for_logged_user()
+
+    if not etudiant:
+      return ERRORS.SERVER_ERROR
+
+    etudiant.cursus_anterieur = None
+    db_session.commit()
+
+    return flask.jsonify(etudiant)
+
+  @app.route('/formation/after', methods=["DELETE"])
+  @login_required
+  def detach_reorientation():
+    # Get logged etudiant
+    etudiant = get_etu_object_for_logged_user()
+
+    if not etudiant:
+      return ERRORS.SERVER_ERROR
+
+    etudiant.reorientation = None
+    db_session.commit()
+
+    return flask.jsonify(etudiant)
 
   @app.route('/formation/related')
   @login_required
