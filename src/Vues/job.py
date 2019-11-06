@@ -30,7 +30,8 @@ def define_emploi_endpoints(app: flask.Flask):
     if not {'start', 'end', 'contract', 'salary', 'is_public', 'level'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-    start, end, contract, salary, is_public, level = data['start'], data['end'], data['contract'], data['salary'], data['is_public'], data['level']
+    start, end, contract = data['start'], data['end'], data['contract']
+    salary, is_public, level = data['salary'], data['is_public'], data['level']
 
 
     # Create new emploi
