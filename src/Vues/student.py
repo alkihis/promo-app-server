@@ -21,10 +21,18 @@ def student_routes(app: flask.Flask):
     currently_logged = get_user().id_etu
     return get_id(currently_logged)
 
+  @app.route('/student/all')
+  @login_required
+  def get_all_students():
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    return flask.jsonify(Etudiant.query.all())
+
   # Get a single Etudiant by ID
-  @app.route('/student/<int:id>')
+  @app.route('/student/<int:id>', methods=["GET"])
   def get_id(id: int):
-    e: Etudiant = Etudiant.query.filter_by(id_etu=identifier).one_or_none()
+    e: Etudiant = Etudiant.query.filter_by(id_etu=id).one_or_none()
 
     if not e:
       return ERRORS.RESOURCE_NOT_FOUND
@@ -47,33 +55,36 @@ def student_routes(app: flask.Flask):
     data = r.json
 
     # Si toutes ces clés ne sont pas présentes dans le dict
-    if not {'first_name', 'last_name', 'email', 'year_in', 'entered_in'} <= set(data):
+    if not {'first_name', 'last_name', 'email', 'year_in', 'entered_in', 'graduated'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
     first_name, last_name, email = data['first_name'], data['last_name'], data['email']
-    year_in, entree = data['year_in'], data['entered_in']
+    year_in, entree, diplome = data['year_in'], data['entered_in'], data['graduated']
 
     # Do not forget to change datestring to date object !
     # birthdate = convert_date(birthdate)
 
-    ## TODO CHECK PROMO, CHECK EMAIL VALIDITY
-    student_check = Etudiant.query.filter_by(mail=email).one_or_none()
-    if student_check:
+    student_check = Etudiant.query.filter_by(mail=email).all()
+    if len(student_check):
       return ERRORS.CONFLICT
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
-    res = re.match(email,email_catch)
-    if res == None:
-      return ERRORS.CONFLICT
+    if not re.match(email_catch, email):
+      return ERRORS.BAD_REQUEST
 
+    current_date = datetime.datetime.now().date().year
 
-    current_date = datetime.datetime.now().date().year()
+    if type(diplome) is not bool:
+      return ERRORS.BAD_REQUEST
 
-    if int(year_in) > current_date or int(year_in) <= 2015:
-      return ERRORS.CONFLICT
+    try:
+      if int(year_in) > current_date or int(year_in) <= 2015:
+        return ERRORS.CONFLICT
+    except:
+      return ERRORS.BAD_REQUEST
     
     # Create student
-    etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, annee_entree=year_in, entree_en_m1=entree == "M1")
+    etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, annee_entree=year_in, entree_en_m1=entree == "M1", diplome=diplome)
 
     db_session.add(etu)
     db_session.commit()
@@ -208,3 +219,24 @@ def student_routes(app: flask.Flask):
 
     return flask.jsonify(results)
 
+
+  @app.route('/student/<int:id>', methods=["DELETE"])
+  @login_required
+  def delete_student(id: int):
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    # Check if exists
+    etu = Etudiant.query.filter_by(id_etu=id).one_or_none()
+
+    if not etu:
+      return ""
+
+    Etudiant.query.filter_by(id_etu=id).delete()
+
+    db_session.delete(etu)
+    db_session.commit()
+
+    return ""
+
+    
