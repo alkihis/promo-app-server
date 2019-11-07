@@ -17,6 +17,7 @@ class Errors:
       8: ('Your current credentials does not allow you to access this resource.', 403),
       9: ('You must be logged to do that, or your login credentials are invalid.', 401),
       10: ('Missing required parameters.', 400),
+      11: ('Conflict in unique values ', 409)
     }
 
     # index + 1 is error code
@@ -31,6 +32,7 @@ class Errors:
       "INVALID_CREDENTIALS",
       "NOT_LOGGED",
       "MISSING_PARAMETERS",
+      "CONFLICT",
     )
 
   def error(self, code: ACCEPTED_CODES, data: dict = None):

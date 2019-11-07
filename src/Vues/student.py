@@ -6,6 +6,8 @@ from helpers import is_teacher, get_request, get_user, create_token_for, convert
 from errors import ERRORS
 from server import db_session
 from sqlalchemy import and_, or_
+import datetime
+import re
 ### Vues pour l'API /student
 
 def student_routes(app: flask.Flask):
@@ -55,7 +57,21 @@ def student_routes(app: flask.Flask):
     # birthdate = convert_date(birthdate)
 
     ## TODO CHECK PROMO, CHECK EMAIL VALIDITY
+    student_check = Etudiant.query.filter_by(mail=email).one_or_none()
+    if student_check:
+      return ERRORS.CONFLICT
 
+    email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
+    res = re.match(email,email_catch)
+    if res == None:
+      return ERRORS.CONFLICT
+
+
+    current_date = datetime.datetime.now().date().year()
+
+    if int(year_in) > current_date or int(year_in) <= 2015:
+      return ERRORS.CONFLICT
+    
     # Create student
     etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, annee_entree=year_in, entree_en_m1=entree == "M1")
 
