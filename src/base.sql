@@ -9,6 +9,7 @@ CREATE TABLE Etudiant (
   annee_entree TEXT NOT NULL,
   annee_sortie TEXT,
   entree_en_m1 BOOLEAN NOT NULL,
+  diplome BOOLEAN NOT NULL DEFAULT FALSE,
   
   cursus_anterieur INTEGER,
   reorientation INTEGER,

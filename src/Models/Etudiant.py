@@ -16,6 +16,7 @@ class Etudiant(db):
   annee_entree = Column(String, nullable=False)
   annee_sortie = Column(String)
   entree_en_m1 = Column(Boolean, nullable=False)
+  diplome = Column(Boolean, nullable=False, default=False)
 
   cursus_anterieur = Column(Integer,
     ForeignKey('formation.id_form', ondelete='SET NULL'),
@@ -39,7 +40,8 @@ class Etudiant(db):
     birthdate: date = None, 
     annee_sortie: str = None, 
     cursus_anterieur: int = None,
-    reorientation: int = None
+    reorientation: int = None,
+    diplome: bool = False,
   ):
     return Etudiant(
       nom=nom, 
@@ -50,7 +52,8 @@ class Etudiant(db):
       annee_sortie=annee_sortie,
       cursus_anterieur=cursus_anterieur,
       reorientation=reorientation,
-      entree_en_m1=entree_en_m1
+      entree_en_m1=entree_en_m1,
+      diplome=diplome,
     )
 
   def to_json(self):
@@ -62,6 +65,7 @@ class Etudiant(db):
       'year_out': self.annee_sortie,
       'entered_in': "M1" if self.entree_en_m1 else "M2",
       'email': self.mail,
+      'graduated': self.diplome,
       'previous_formation': None if not self.cursus_obj else self.cursus_obj.to_json(),
       'next_formation': None if not self.reorientation_obj else self.reorientation_obj.to_json()
     }
