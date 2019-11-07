@@ -21,7 +21,8 @@ CREATE TABLE Etudiant (
 CREATE TABLE Formation (
   id_form INTEGER PRIMARY KEY AUTOINCREMENT,
   lieu TEXT NOT NULL,
-  nom TEXT NOT NULL
+  niveau TEXT NOT NULL, -- ENUM: must be "Licence", "Master", "Doctorat", "Autre"
+  filiere TEXT NOT NULL
 );
 
 CREATE TABLE Contact (

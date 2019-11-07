@@ -7,8 +7,9 @@ class Formation(db):
   query: Query
 
   id_form = Column(Integer, primary_key=True)
-  nom = Column(String, nullable=False)
+  filiere = Column(String, nullable=False)
   lieu = Column(String, nullable=False)
+  niveau = Column(String, nullable=False)
 
   @staticmethod
   def create(nom: str, lieu: str):
@@ -17,7 +18,8 @@ class Formation(db):
   def to_json(self):
     return {
       'id': self.id_form,
-      'name': self.nom,
-      'location': self.lieu
+      'branch': self.filiere,
+      'location': self.lieu,
+      'level': self.niveau,
     }
 
