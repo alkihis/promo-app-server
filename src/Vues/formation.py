@@ -25,19 +25,19 @@ def define_formation_endpoints(app: flask.Flask):
 
     data = r.json
 
-    if not {'name', 'location'} <= set(data):
+    if not {'name', 'location', 'level'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-    name, location = data['name'], data['location']
+    branch, location, level = data['branch'], data['location'], data['level']
 
     ## Search for similar formations TODO improve search
-    f = Formation.query.filter(and_(Formation.nom.ilike(f"{name}"), Formation.lieu.ilike(f"{location}"))).all()
+    f = Formation.query.filter(and_(Formation.filiere.ilike(f"{branch}"), Formation.lieu.ilike(f"{location}", Formation.niveau.ilike(f"{level}")))).all()
 
     if len(f):
       return flask.jsonify(f[0]), 200
 
     # Create new formation
-    form = Formation.create(nom=name, lieu=location)
+    form = Formation.create(filiere=branch, lieu=location, niveau=level)
     db_session.add(form)
     db_session.commit()
 
