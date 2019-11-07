@@ -34,6 +34,21 @@ student_routes(bp)
 from Vues.formation import define_formation_endpoints
 define_formation_endpoints(bp)
 
+from Vues.company import define_company_endpoints
+define_company_endpoints(bp)
+
+from Vues.domain import define_domain_endpoints
+define_domain_endpoints(bp)
+
+from Vues.contact import define_contact_endpoints
+define_contact_endpoints(bp)
+
+from Vues.internship import define_internship_endpoints
+define_internship_endpoints(bp)
+
+from Vues.job import define_job_endpoints
+define_job_endpoints(bp)
+
 # This should be after all bp definitions !
 app.register_blueprint(bp, url_prefix='/api')
 

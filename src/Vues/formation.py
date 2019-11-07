@@ -13,7 +13,7 @@ from models_helpers import get_etu_object_for_logged_user
 def define_formation_endpoints(app: flask.Flask):
   @app.route('/formation/create', methods=["POST"])
   @login_required
-  def make_formation():
+  def create_formation():
     r = get_request()
     user_id = r.args.get('user_id', None)
 

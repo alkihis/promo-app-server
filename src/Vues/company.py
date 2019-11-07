@@ -28,7 +28,7 @@ def define_company_endpoints(app: flask.Flask):
       name, city, size, status = data['name'], data['city'], data['size'], data['status']
 
       ## Search for similar company TODO improve search
-      f = Entreprise.query.filter(and_(Entreprise.nom.ilike(f"{name}"), Entreprise.ville.ilike(f"{city}")).all()
+      f = Entreprise.query.filter(and_(Entreprise.nom.ilike(f"{name}"), Entreprise.ville.ilike(f"{city}"))).all()
       
       if len(f):
         return flask.jsonify(f[0]), 200
@@ -49,7 +49,7 @@ def define_company_endpoints(app: flask.Flask):
 
   @app.route('/company/related')
   @login_required
-  def find_relative_contact():
+  def find_relative_company():
     r = get_request()
     name: str = None
     city: str = None

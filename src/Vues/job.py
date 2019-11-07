@@ -11,7 +11,7 @@ from server import db_session
 from typing import List, Tuple, Dict
 
 
-def define_emploi_endpoints(app: flask.Flask):
+def define_job_endpoints(app: flask.Flask):
   @app.route('/job/create', methods=["POST"])
   @login_required
   def make_emploi():

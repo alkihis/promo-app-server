@@ -1,5 +1,5 @@
 import flask
-from Models.Domaine import Domiane
+from Models.Domaine import Domaine
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, is_truthy
 from errors import ERRORS
