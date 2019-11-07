@@ -8,7 +8,7 @@ from typing import List, Tuple, Dict
 from sqlalchemy import and_, or_
 
 def define_company_endpoints(app: flask.Flask):
-  @app.route('/entreprise/create', methods=["POST"])
+  @app.route('/company/create', methods=["POST"])
   @login_required
   def make_entreprise():
     r = get_request()
