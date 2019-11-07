@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, Blueprint
 from flask_cors import CORS
 from server import app, db_session
 
@@ -11,25 +11,31 @@ if __name__ == "__main__":
 # Make app CORS-ready
 CORS(app)
 
+# Construct a blueprint to encapsulate API routes behind /api
+bp = Blueprint('API', "promo-app-server")
+
 # Init the login manager
 from login_handler import set_app_login_manager
 set_app_login_manager(app)
 
 ## Import the module and the apply function, and give app
-from Vues.get_student import get_student_routes
-# get_student_routes(app)
+# from Vues.get_student import get_student_routes
+# get_student_routes(bp)
 
 from errors import classic_errors
-classic_errors(app)
+classic_errors(bp)
 
 from Vues.auth import define_auth_routes
-define_auth_routes(app)
+define_auth_routes(bp)
 
 from Vues.student import student_routes
-student_routes(app)
+student_routes(bp)
 
 from Vues.formation import define_formation_endpoints
-define_formation_endpoints(app)
+define_formation_endpoints(bp)
+
+# This should be after all bp definitions !
+app.register_blueprint(bp, url_prefix='/api')
 
 @app.teardown_appcontext
 def shutdown_session(e):

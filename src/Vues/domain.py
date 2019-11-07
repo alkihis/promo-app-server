@@ -7,7 +7,7 @@ from server import db_session
 from typing import List, Tuple, Dict
 
 def define_domain_endpoints(app: flask.Flask):
-  @app.route('/domaine/create', methods=["POST"])
+  @app.route('/domain/create', methods=["POST"])
   @login_required
   def make_domain():
     r = get_request()
@@ -43,12 +43,12 @@ def define_domain_endpoints(app: flask.Flask):
     return flask.jsonify(dom), 201
 
 
-  @app.route('/domaine/all')
+  @app.route('/domain/all')
   @login_required
   def fetch_domains():
     return flask.jsonify(Domaine.query.all())
 
-  @app.route('/domaine/related')
+  @app.route('/domain/related')
   @login_required
   def find_relative_domains():
     r = get_request()

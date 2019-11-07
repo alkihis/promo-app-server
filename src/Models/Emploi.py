@@ -21,19 +21,22 @@ class Emploi(db):
   
   id_entreprise = Column(
     Integer,
-    ForeignKey('entreprise.id_entreprise', ondelete='SET NULL')
+    ForeignKey('entreprise.id_entreprise', ondelete='SET NULL'),
+    nullable=False
   )
   entreprise: Entreprise = relationship('Entreprise', back_populates="emplois")
 
   id_domaine = Column(
     Integer,
-    ForeignKey('domaine.id_domaine', ondelete='SET NULL')
+    ForeignKey('domaine.id_domaine', ondelete='SET NULL'),
+    nullable=False
   )
   domaine: Domaine = relationship('Domaine', foreign_keys=[id_domaine])
 
   id_contact = Column(
     Integer,
-    ForeignKey('contact.id_contact', ondelete='SET NULL')
+    ForeignKey('contact.id_contact', ondelete='SET NULL'),
+    nullable=True
   )
   contact: Contact = relationship('Contact', foreign_keys=[id_contact])
 

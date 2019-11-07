@@ -11,6 +11,7 @@ import Models.Token
 def get_request() -> Request:
   return request
 
+# Return a User object (defined in login_handler.py)
 def get_user():
   return current_user
 

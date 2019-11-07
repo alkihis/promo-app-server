@@ -18,12 +18,14 @@ class Etudiant(db):
   entree_en_m1 = Column(Boolean, nullable=False)
 
   cursus_anterieur = Column(Integer,
-    ForeignKey('formation.id_form', ondelete='SET NULL')
+    ForeignKey('formation.id_form', ondelete='SET NULL'),
+    nullable=True
   )
   cursus_obj: Formation = relationship('Formation', foreign_keys=[cursus_anterieur])
 
   reorientation = Column(Integer,
-   ForeignKey('formation.id_form', ondelete='SET NULL')
+    ForeignKey('formation.id_form', ondelete='SET NULL'),
+    nullable=True
   )
   reorientation_obj: Formation = relationship('Formation', foreign_keys=[reorientation])
 
@@ -32,9 +34,9 @@ class Etudiant(db):
     nom: str, 
     prenom: str, 
     mail: str, 
-    birthdate: date, 
     annee_entree: str, 
     entree_en_m1: bool,
+    birthdate: date = None, 
     annee_sortie: str = None, 
     cursus_anterieur: int = None,
     reorientation: int = None

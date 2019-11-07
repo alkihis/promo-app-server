@@ -5,7 +5,7 @@ CREATE TABLE Etudiant (
   nom TEXT NOT NULL,
   prenom TEXT NOT NULL,
   mail TEXT NOT NULL,
-  birthdate TEXT NOT NULL,
+  birthdate TEXT,
   annee_entree TEXT NOT NULL,
   annee_sortie TEXT,
   entree_en_m1 BOOLEAN NOT NULL,
@@ -46,20 +46,6 @@ CREATE TABLE Domaine (
   domaine TEXT NOT NULL
 );
 
--- CREATE TABLE Alternance (
---   id_alt INTEGER PRIMARY KEY AUTOINCREMENT,
-
---   promo TEXT NOT NULL,
-
---   id_etu INTEGER NOT NULL,
---   id_entreprise INTEGER NOT NULL,
---   id_contact INTEGER NOT NULL,
-
---   FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu),
---   FOREIGN KEY(id_entreprise) REFERENCES Entreprise(id_entreprise),
---   FOREIGN KEY(id_contact) REFERENCES Contact(id_contact)
--- );
-
 CREATE TABLE Stage (
   id_stage INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -79,14 +65,16 @@ CREATE TABLE Stage (
 CREATE TABLE Emploi (
   id_emploi INTEGER PRIMARY KEY AUTOINCREMENT,
   id_etu INTEGER NOT NULL,
-  id_contact INTEGER NOT NULL,
+  id_contact INTEGER,
   id_domaine INTEGER NOT NULL,
   id_entreprise INTEGER NOT NULL,
 
   debut TEXT NOT NULL, -- DATETIME | promotion si alternance
-  fin TEXT NOT NULL, -- DATETIME or "now" or null si alternance
+  fin TEXT, -- DATETIME or "now" or null si pas fini
   contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance" TODO VOIR CONTRATS
   salaire INTEGER, -- Peut être non précisé
+  is_public BOOLEAN NOT NULL,
+  niveau TEXT NOT NULL,
 
   FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE,
   FOREIGN KEY(id_contact) REFERENCES Contact(id_contact) ON DELETE SET NULL,

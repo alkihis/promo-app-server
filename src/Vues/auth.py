@@ -6,6 +6,8 @@ from server import db_session
 from errors import ERRORS
 from flask_login import login_required
 
+PASSWORD_FOR_TEACHER = "DEFINED_PASSWORD"
+
 def define_auth_routes(app: flask.Flask):
   ## For teacher
   @app.route('/auth/login', methods=['POST'])
@@ -13,7 +15,7 @@ def define_auth_routes(app: flask.Flask):
     r = get_request()
 
     # TODO make verif for password
-    if r.is_json and 'password' in r.json and r.json['password'] == "DEFINED_PASSWORD":
+    if r.is_json and 'password' in r.json and r.json['password'] == PASSWORD_FOR_TEACHER:
       # Cherche si un token existe
       t: Token = Token.query.filter_by(teacher=True).one_or_none()
 
@@ -42,13 +44,13 @@ def define_auth_routes(app: flask.Flask):
       t: Token = Token.query.filter_by(token=token).one_or_none()
 
       if not t:
-        return ERRORS.error("INVALID_TOKEN")
+        return ERRORS.INVALID_TOKEN
       
       # Empty HTTP 200
-      return ""
+      return flask.jsonify({"is_teacher": t.teacher})
 
     else:
-      return ERRORS.error("BAD_REQUEST")
+      return ERRORS.BAD_REQUEST
 
   # Redirect to home (useless)
   @app.route('/auth/redirect')
