@@ -12,7 +12,7 @@ from typing import List, Tuple, Dict
 
 
 def define_internship_endpoints(app: flask.Flask):
-  @app.route('/job/create', methods=["POST"])
+  @app.route('/intrenship/create', methods=["POST"])
   @login_required
   def make_internship():
     r = get_request()
@@ -31,9 +31,29 @@ def define_internship_endpoints(app: flask.Flask):
     if not {'promo_year', 'id_entreprise', 'domain', 'id_contact'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-    promo_year, id_entreprise, dommain, id_contact = data['promo_year'], data['id_entreprise'], data['domain'], data['contact']
+    promo_year, id_entreprise, domain, id_contact = data['promo_year'], data['id_entreprise'], data['domain'], data['id_contact']
 
-    ## todo check company id, domain to id
+    ## Check company id
+    ent: Entreprise = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
+
+    if not ent:
+        return ERRORS.BAD_REQUEST
+
+
+    ##  Domain to id
+    dom: Domaine = Domaine.query.filter_by(domaine=domain).one_or_none()
+
+    if not dom:
+        return ERRORS.BAD_REQUEST
+    
+    id_domain = dom.id_domaine
+
+
+    ## Check contact id
+    cont: Contact = Contact.query.filter_by(id_contact=id_contact).one_or_none()
+
+    if not cont:
+        return ERRORS.BAD_REQUEST
 
     # Create new internship
     inter = Stage.create(promo=promo_year, id_entreprise=id_entreprise, id_domaine=id_domain, id_contact=id_contact, id_etu=user_id)
@@ -45,5 +65,5 @@ def define_internship_endpoints(app: flask.Flask):
 
   @app.route('/internship/all')
   @login_required
-  def fetch_jobs():
+  def fetch_internships():
     return flask.jsonify(Stage.query.all())
