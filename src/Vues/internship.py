@@ -45,5 +45,5 @@ def define_internship_endpoints(app: flask.Flask):
 
   @app.route('/internship/all')
   @login_required
-  def fetch_jobs():
+  def fetch_intership():
     return flask.jsonify(Stage.query.all())

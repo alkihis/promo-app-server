@@ -1,10 +1,11 @@
 import flask
 from Models.Etudiant import Etudiant
 from Models.Formation import Formation
+from Models.Token import Token
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date
 from errors import ERRORS
-from server import db_session
+from server import db_session, engine
 from sqlalchemy import and_, or_
 import datetime
 import re
@@ -78,8 +79,8 @@ def student_routes(app: flask.Flask):
       return ERRORS.BAD_REQUEST
 
     try:
-      if int(year_in) > current_date or int(year_in) <= 2015:
-        return ERRORS.CONFLICT
+      if int(year_in) > current_date or int(year_in) < 2015:
+        return ERRORS.BAD_REQUEST
     except:
       return ERRORS.BAD_REQUEST
     
@@ -233,8 +234,9 @@ def student_routes(app: flask.Flask):
       return ""
 
     Etudiant.query.filter_by(id_etu=id).delete()
+    # delete cascade does not work??
+    Token.query.filter_by(id_etu=id).delete()
 
-    db_session.delete(etu)
     db_session.commit()
 
     return ""
