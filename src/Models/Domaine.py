@@ -16,5 +16,5 @@ class Domaine(db):
   def to_json(self):
     return {
       'id': self.id_domaine,
-      'domaine': self.domain
+      'domaine': self.domaine
     }

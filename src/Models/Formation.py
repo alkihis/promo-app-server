@@ -12,8 +12,8 @@ class Formation(db):
   niveau = Column(String, nullable=False)
 
   @staticmethod
-  def create(nom: str, lieu: str):
-    return Formation(nom=nom, lieu=lieu)
+  def create(filiere: str, lieu: str, niveau: str):
+    return Formation(filiere=filiere, lieu=lieu, niveau=niveau)
 
   def to_json(self):
     return {
