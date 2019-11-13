@@ -51,11 +51,11 @@ class Stage(db):
       id_etu=id_etu
     )
 
-  def to_json(self):
+  def to_json(self, full = False):
     return {
       'id': self.id_stage,
       'during': self.promo,
-      'owner': self.etudiant,
+      'owner': self.etudiant if full else self.id_etu,
       'company': self.entreprise,
       'referrer': self.contact
     }

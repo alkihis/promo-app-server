@@ -178,7 +178,7 @@ def define_job_endpoints(app: flask.Flask):
         job.fin = None
       else:
         try:
-          end = convert_date(end)
+          end = convert_date(data['end'])
         except:
           print("End date error")
           db_session.rollback()
@@ -237,3 +237,47 @@ def define_job_endpoints(app: flask.Flask):
       return ERRORS.BAD_REQUEST
 
     return flask.jsonify(Emploi.query.filter_by(id_etu=stu.id_etu).all())
+
+
+  @app.route('/job/<int:id>', methods=["GET"])
+  @login_required
+  def get_a_job(id: int):
+    job: Emploi = Emploi.query.filter_by(id_emploi=id).one_or_none()
+
+    if job is None:
+      return ERRORS.RESOURCE_NOT_FOUND
+
+    stu = get_student_or_none()
+
+    if not stu:
+      return ERRORS.BAD_REQUEST
+
+    if not is_teacher() and stu.id_etu != job.id_etu:
+      return ERRORS.INVALID_CREDENTIALS
+
+    return flask.jsonify(job)
+
+
+  @app.route('/job/<int:id>', methods=["DELETE"])
+  @login_required
+  def delete_job(id: int):
+    job: Emploi = Emploi.query.filter_by(id_emploi=id).one_or_none()
+
+    if job is None:
+      return "" # 200 OK deleted
+
+    stu = get_student_or_none()
+
+    if not stu:
+      return ERRORS.BAD_REQUEST
+
+    if not is_teacher() and stu.id_etu != job.id_etu:
+      return ERRORS.INVALID_CREDENTIALS
+
+    # TODO properly delete job (maybe cascade is not working)
+    db_session.delete(job)
+    db_session.commit()
+
+    return ""
+
+

@@ -12,7 +12,7 @@ from typing import List, Tuple, Dict
 
 
 def define_internship_endpoints(app: flask.Flask):
-  @app.route('/intrenship/create', methods=["POST"])
+  @app.route('/internship/create', methods=["POST"])
   @login_required
   def make_internship():
     r = get_request()
