@@ -1,10 +1,12 @@
 import flask
 from Models.Entreprise import Entreprise
+from Models.Contact import Contact
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, is_truthy
 from errors import ERRORS
 from server import db_session
 from typing import List, Tuple, Dict
+from sqlalchemy import and_, or_
 
 
 def define_contact_endpoints(app: flask.Flask):
@@ -12,12 +14,7 @@ def define_contact_endpoints(app: flask.Flask):
   @login_required
   def make_contact():
     r = get_request()
-    user_id = r.args.get('user_id', None)
-
-    if not is_teacher():
-      user_id = get_user().id_etu
-
-    if not user_id or not r.is_json:
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -25,29 +22,55 @@ def define_contact_endpoints(app: flask.Flask):
     if not {'name', 'mail', 'id_entreprise'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-      name, mail, id_entreprise = data['name'], data['mail'], data['id_entreprise']
+    name, mail, id_entreprise = data['name'], data['mail'], data['id_entreprise']
 
-      ## Search for similar contact TODO improve search
-      f = Contact.query.filter(and_(Contact.nom.ilike(f"{name}"), Contact.mail.ilike(f"{mail}"),
-                                    Contact.id_entreprise.ilike(f"{entreprise}"))).all()
-      
-      if len(f):
-        attach_previous_contact(user_id, f[0].id_entreprise)
-        return flask.jsonify(f[0]), 200
+    try:
+      id_entreprise = int(id_entreprise)
+    except:
+      return ERRORS.BAD_REQUEST
+
+    ## Search for similar contact TODO improve search
+    f = Contact.query.filter(
+      and_(
+        Contact.nom.ilike(f"{name}"), 
+        Contact.mail.ilike(f"{mail}"),
+        Contact.id_entreprise == id_entreprise
+      )
+    ).all()
+
+    # Test si l'entreprise existe
+    e = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
+
+    if not e:
+      return ERRORS.RESOURCE_NOT_FOUND
+    
+    if len(f):
+      return flask.jsonify(f[0]), 200
 
     # Create new contact
-    cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise )
+    cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise)
     db_session.add(cont)
     db_session.commit()
-
-    #attach_previous_contact(user_id, cont.id_entreprise)
 
     return flask.jsonify(cont), 201
 
   @app.route('/contact/all')
   @login_required
   def fetch_contact():
-    return flask.jsonify(Contact.query.all())
+    r = get_request()
+
+    id_e = None
+    if 'company' in r.args:
+      try:
+        id_e = int(r.args['company'])
+      except:
+        pass
+      
+    if not id_e or id_e < 0:
+      return ERRORS.MISSING_PARAMETERS
+
+    return flask.jsonify(Contact.query.filter_by(id_entreprise=id_e).all())
+
 
   @app.route('/contact/related')
   @login_required
@@ -96,10 +119,3 @@ def define_contact_endpoints(app: flask.Flask):
     accepted.sort(key=lambda x: max((x[1]['name'], x[1]['mail'])), reverse=True)
 
     return flask.jsonify(accepted)
-
-# def attach_previous_contact(id_et: int, id_form: int):
-#   e: Etudiant = Etudiant.query.filter_by(id_etu=id_etu).one_or_none()
-
-#   if e:
-#     e.cursus_anterieur = id_form
-#     db_session.commit()

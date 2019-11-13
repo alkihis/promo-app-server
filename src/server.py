@@ -5,6 +5,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import date
 from json import JSONEncoder
+import os
 
 ## File for creating/enabling connection to SQLite database, define ORM models, affect it to Flask app.
 

@@ -75,7 +75,7 @@ CREATE TABLE Emploi (
   fin TEXT, -- DATETIME or "now" or null si pas fini
   contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance" TODO VOIR CONTRATS
   salaire INTEGER, -- Peut être non précisé
-  is_public BOOLEAN NOT NULL,
+  -- is_public BOOLEAN NOT NULL, -- Déplacé dans Entreprise
   niveau TEXT NOT NULL,
 
   FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE,
