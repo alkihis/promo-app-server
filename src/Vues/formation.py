@@ -50,34 +50,35 @@ def define_formation_endpoints(app: flask.Flask):
   def fetch_locations():
     return flask.jsonify(Formation.query.all())
 
-    
-  @app.route('/formation/before', methods=["DELETE"])
+
+  @app.route('/formation/<int:id>', methods=["DELETE"])
   @login_required
-  def detach_formation():
+  def delete_formation(id: int):
     # Get logged etudiant
-    etudiant = get_etu_object_for_logged_user()
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
 
-    if not etudiant:
-      return ERRORS.SERVER_ERROR
+    try:
+      id_formation = int(id)
+    except:
+      return ERRORS.BAD_REQUEST
 
-    etudiant.cursus_anterieur = None
+    form: Formation = Formation.query.filter_by(id_formation=id_formation).one_or_none()
+
+    if not form:
+      return ""
+
+    # Supprime les formations des étudiants
+    for etu in Etudiant.query.filter_by(cursus_anterieur=id_formation).all():
+      etu.cursus_anterieur = None
+
+    for etu in Etudiant.query.filter_by(reorientation=id_formation).all():
+      e.reorientation = None
+  
     db_session.commit()
 
-    return flask.jsonify(etudiant)
+    return ""
 
-  @app.route('/formation/after', methods=["DELETE"])
-  @login_required
-  def detach_reorientation():
-    # Get logged etudiant
-    etudiant = get_etu_object_for_logged_user()
-
-    if not etudiant:
-      return ERRORS.SERVER_ERROR
-
-    etudiant.reorientation = None
-    db_session.commit()
-
-    return flask.jsonify(etudiant)
 
   @app.route('/formation/related')
   @login_required
