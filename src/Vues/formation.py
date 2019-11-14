@@ -30,6 +30,8 @@ def define_formation_endpoints(app: flask.Flask):
 
     branch, location, level = data['branch'], data['location'], data['level']
 
+    # TODO check level: must be in ENUM
+
     ## Search for similar formations TODO improve search
     f = Formation.query.filter(and_(Formation.filiere.ilike(f"{branch}"), Formation.lieu.ilike(f"{location}", Formation.niveau.ilike(f"{level}")))).all()
 
@@ -48,61 +50,7 @@ def define_formation_endpoints(app: flask.Flask):
   def fetch_locations():
     return flask.jsonify(Formation.query.all())
 
-  @app.route('/formation/before', methods=["POST"])
-  @login_required
-  def attach_formation():
-    user_id = get_user().id_etu
-    r = get_request()
-
-    if not 'id' in r.args:
-      return ERRORS.MISSING_PARAMETERS
-
-    form_id = r.args.get('id', None, type=int)
-
-    # Get logged etudiant
-    etudiant = get_etu_object_for_logged_user()
-
-    if not etudiant:
-      return ERRORS.SERVER_ERROR
-
-    # Find formation
-    if form_id: 
-      formation = Formation.query.filter_by(id_form=form_id).one_or_none()
-      if not formation:
-        return ERRORS.RESOURCE_NOT_FOUND
-
-    etudiant.cursus_anterieur = form_id
-    db_session.commit()
-
-    return flask.jsonify(etudiant)
-      
-  @app.route('/formation/after', methods=["POST"])
-  @login_required
-  def attach_reorientation():
-    r = get_request()
-
-    if not 'id' in r.args:
-      return ERRORS.MISSING_PARAMETERS
-
-    form_id = r.args.get('id', None, type=int)
-
-    # Get logged etudiant
-    etudiant = get_etu_object_for_logged_user()
-
-    if not etudiant:
-      return ERRORS.SERVER_ERROR
-
-    # Find formation
-    if form_id: 
-      formation = Formation.query.filter_by(id_form=form_id).one_or_none()
-      if not formation:
-        return ERRORS.RESOURCE_NOT_FOUND
-
-    etudiant.reorientation = form_id
-    db_session.commit()
-
-    return flask.jsonify(etudiant)
-
+    
   @app.route('/formation/before', methods=["DELETE"])
   @login_required
   def detach_formation():

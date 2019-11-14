@@ -29,8 +29,7 @@ class Stage(db):
 
   id_contact = Column(
     Integer,
-    ForeignKey('contact.id_contact', ondelete='SET NULL'),
-    nullable=False
+    ForeignKey('contact.id_contact', ondelete='SET NULL')
   )
   contact: Contact = relationship('Contact')
 
@@ -57,5 +56,6 @@ class Stage(db):
       'during': self.promo,
       'owner': self.etudiant if full else self.id_etu,
       'company': self.entreprise,
+      'domain': self.domaine.domaine,
       'referrer': self.contact
     }

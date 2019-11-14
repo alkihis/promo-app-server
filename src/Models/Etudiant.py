@@ -12,7 +12,6 @@ class Etudiant(db):
   nom = Column(String, nullable=False)
   prenom = Column(String, nullable=False)
   mail = Column(String, nullable=False)
-  birthdate = Column(Date)
   annee_entree = Column(String, nullable=False)
   annee_sortie = Column(String)
   entree_en_m1 = Column(Boolean, nullable=False)
@@ -37,7 +36,6 @@ class Etudiant(db):
     mail: str, 
     annee_entree: str, 
     entree_en_m1: bool,
-    birthdate: date = None, 
     annee_sortie: str = None, 
     cursus_anterieur: int = None,
     reorientation: int = None,
@@ -46,8 +44,7 @@ class Etudiant(db):
     return Etudiant(
       nom=nom, 
       prenom=prenom, 
-      mail=mail, 
-      birthdate=birthdate, 
+      mail=mail,
       annee_entree=annee_entree,
       annee_sortie=annee_sortie,
       cursus_anterieur=cursus_anterieur,

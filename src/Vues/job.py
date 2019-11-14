@@ -239,6 +239,22 @@ def define_job_endpoints(app: flask.Flask):
     return flask.jsonify(Emploi.query.filter_by(id_etu=stu.id_etu).all())
 
 
+  @app.route('/job/actives')
+  @login_required
+  def get_last_actives_job():
+    stu = get_student_or_none()
+
+    if not stu:
+      return ERRORS.BAD_REQUEST
+
+    jobs = Emploi.query.filter_by(id_etu=stu.id_etu, fin=None).order_by(Emploi.debut.desc()).all()
+
+    if not jobs:
+      return flask.jsonify([])
+
+    return flask.jsonify(jobs)
+
+
   @app.route('/job/<int:id>', methods=["GET"])
   @login_required
   def get_a_job(id: int):
