@@ -36,6 +36,11 @@ class User:
       else:
         return None
 
+  def __repr__(self):
+    return f"""
+      {self.id_etu} / {self.teacher}
+    """
+
 login_manager = LoginManager()
 
 def set_app_login_manager(app):

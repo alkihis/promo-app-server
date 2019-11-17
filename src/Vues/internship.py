@@ -60,6 +60,7 @@ def define_internship_endpoints(app: flask.Flask):
         return ERRORS.BAD_REQUEST
 
     # Create new internship
+    stu.refresh_update()
     inter = Stage.create(
       promo=promo_year, 
       id_entreprise=int(id_entreprise), 
@@ -130,6 +131,7 @@ def define_internship_endpoints(app: flask.Flask):
 
         internship.id_contact = cont.id_contact
 
+    stu.refresh_update()
     db_session.commit()
 
     return flask.jsonify(internship)
@@ -183,6 +185,7 @@ def define_internship_endpoints(app: flask.Flask):
       return ERRORS.INVALID_CREDENTIALS
 
     # TODO properly delete internship (maybe cascade is not working)
+    stu.refresh_update()
     db_session.delete(internship)
     db_session.commit()
 

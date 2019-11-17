@@ -5,7 +5,7 @@ CREATE TABLE Etudiant (
   nom TEXT NOT NULL,
   prenom TEXT NOT NULL,
   mail TEXT NOT NULL,
-  birthdate TEXT,
+  derniere_modification DATETIME NOT NULL,
   annee_entree TEXT NOT NULL,
   annee_sortie TEXT,
   entree_en_m1 BOOLEAN NOT NULL,

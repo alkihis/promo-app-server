@@ -55,7 +55,7 @@ class Stage(db):
       'id': self.id_stage,
       'during': self.promo,
       'owner': self.etudiant if full else self.id_etu,
-      'company': self.entreprise,
+      'company': self.entreprise.to_json(),
       'domain': self.domaine.domaine,
       'referrer': self.contact
     }

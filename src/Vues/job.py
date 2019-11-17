@@ -86,6 +86,7 @@ def define_job_endpoints(app: flask.Flask):
     ## todo CHECK Level, Contract in ENUM
 
     # Create new emploi
+    stu.refresh_update()
     emp = Emploi.create(
       debut=start, 
       fin=end, 
@@ -223,6 +224,7 @@ def define_job_endpoints(app: flask.Flask):
           return ERRORS.BAD_REQUEST
 
     ## todo CHECK Level, Contract in ENUM
+    stu.refresh_update()
     db_session.commit()
 
     return flask.jsonify(job)
@@ -291,6 +293,7 @@ def define_job_endpoints(app: flask.Flask):
       return ERRORS.INVALID_CREDENTIALS
 
     # TODO properly delete job (maybe cascade is not working)
+    stu.refresh_update()
     db_session.delete(job)
     db_session.commit()
 

@@ -63,7 +63,7 @@ class Emploi(db):
     return {
       'id': self.id_emploi,
       'owner': self.etudiant if full else self.id_etu,
-      'company': self.entreprise,
+      'company': self.entreprise.to_json(),
       'referrer': self.contact,
       'domain': self.domaine.domaine,
       'from': self.debut,

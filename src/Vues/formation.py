@@ -8,19 +8,16 @@ from server import db_session
 from sqlalchemy import and_
 import Levenshtein
 from typing import List, Tuple, Dict
-from models_helpers import get_etu_object_for_logged_user
+from models_helpers import get_student_or_none
 
 def define_formation_endpoints(app: flask.Flask):
   @app.route('/formation/create', methods=["POST"])
   @login_required
   def create_formation():
     r = get_request()
-    user_id = r.args.get('user_id', None)
+    stu: Etudiant = get_student_or_none()
 
-    if not is_teacher():
-      user_id = get_user().id_etu
-
-    if not user_id or not r.is_json:
+    if not stu or not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -28,15 +25,15 @@ def define_formation_endpoints(app: flask.Flask):
     if not {'name', 'location', 'level'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-    branch, location, level = data['branch'], data['location'], data['level']
+    branch, location, level = data['name'], data['location'], data['level']
 
     # TODO check level: must be in ENUM
 
     ## Search for similar formations TODO improve search
-    f = Formation.query.filter(and_(Formation.filiere.ilike(f"{branch}"), Formation.lieu.ilike(f"{location}", Formation.niveau.ilike(f"{level}")))).all()
+    f = Formation.query.filter(and_(Formation.filiere.ilike(f"{branch}"), Formation.lieu.ilike(f"{location}"), Formation.niveau.ilike(f"{level}"))).all()
 
     if len(f):
-      return flask.jsonify(f[0]), 200
+      return flask.jsonify(f[0])
 
     # Create new formation
     form = Formation.create(filiere=branch, lieu=location, niveau=level)
@@ -44,6 +41,7 @@ def define_formation_endpoints(app: flask.Flask):
     db_session.commit()
 
     return flask.jsonify(form), 201
+
 
   @app.route('/formation/all')
   @login_required
@@ -58,21 +56,16 @@ def define_formation_endpoints(app: flask.Flask):
     if not is_teacher():
       return ERRORS.INVALID_CREDENTIALS
 
-    try:
-      id_formation = int(id)
-    except:
-      return ERRORS.BAD_REQUEST
-
-    form: Formation = Formation.query.filter_by(id_formation=id_formation).one_or_none()
+    form: Formation = Formation.query.filter_by(id_formation=id).one_or_none()
 
     if not form:
       return ""
 
     # Supprime les formations des étudiants
-    for etu in Etudiant.query.filter_by(cursus_anterieur=id_formation).all():
+    for etu in Etudiant.query.filter_by(cursus_anterieur=id).all():
       etu.cursus_anterieur = None
 
-    for etu in Etudiant.query.filter_by(reorientation=id_formation).all():
+    for etu in Etudiant.query.filter_by(reorientation=id).all():
       e.reorientation = None
   
     db_session.commit()
