@@ -25,22 +25,32 @@ def define_contact_endpoints(app: flask.Flask):
     if not {'name', 'mail', 'id_entreprise'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-      name, mail, id_entreprise = data['name'], data['mail'], data['id_entreprise']
+    name, mail, id_entreprise = data['name'], data['mail'], data['id_entreprise']
 
-      ## Search for similar contact TODO improve search
-      f = Contact.query.filter(and_(Contact.nom.ilike(f"{name}"), Contact.mail.ilike(f"{mail}"),
-                                    Contact.id_entreprise.ilike(f"{entreprise}"))).all()
+    ## Search for similar contact TODO improve search
+    f = Contact.query.filter(and_(Contact.nom.ilike(f"{name}"), Contact.mail.ilike(f"{mail}"),
+                                  Contact.id_entreprise.ilike(f"{entreprise}"))).all()
       
-      if len(f):
-        attach_previous_contact(user_id, f[0].id_entreprise)
-        return flask.jsonify(f[0]), 200
+    if len(f):
+      attach_previous_contact(user_id, f[0].id_entreprise)
+      return flask.jsonify(f[0]), 200
+
+    #Check id_entreprise
+    ent: Entreprise = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
+
+    if not ent:
+      ERRORS.BAD_REQUEST
+    
+
+    email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
+    if not re.match(email_catch, email):
+      return ERRORS.BAD_REQUEST
 
     # Create new contact
     cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise )
     db_session.add(cont)
     db_session.commit()
 
-    #attach_previous_contact(user_id, cont.id_entreprise)
 
     return flask.jsonify(cont), 201
 
@@ -96,10 +106,3 @@ def define_contact_endpoints(app: flask.Flask):
     accepted.sort(key=lambda x: max((x[1]['name'], x[1]['mail'])), reverse=True)
 
     return flask.jsonify(accepted)
-
-# def attach_previous_contact(id_et: int, id_form: int):
-#   e: Etudiant = Etudiant.query.filter_by(id_etu=id_etu).one_or_none()
-
-#   if e:
-#     e.cursus_anterieur = id_form
-#     db_session.commit()

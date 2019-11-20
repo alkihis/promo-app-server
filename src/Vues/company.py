@@ -38,8 +38,6 @@ def define_company_endpoints(app: flask.Flask):
     db_session.add(comp)
     db_session.commit()
 
-    #attach_previous_contact(user_id, cont.id_entreprise)
-
     return flask.jsonify(comp), 201
 
   @app.route('/company/all')
