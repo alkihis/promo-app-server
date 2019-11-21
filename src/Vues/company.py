@@ -31,7 +31,22 @@ def define_company_endpoints(app: flask.Flask):
     if len(f):
       return flask.jsonify(f[0])
 
-    # TODO add checks for size and status (enum voir TS interfaces.ts)
+    # Checks for size and status (enum voir TS interfaces.ts)
+    if type(size) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_comp_size = {"small", "big", "medium", "very_big"}
+    if size not in valid_comp_size:
+      return ERRORS.BAD_REQUEST 
+
+    # Checks for status (enum voir TS interfaces.ts)
+    if type(status) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_comp_status = {"public", "private"}
+    if status not in valid_comp_status:
+      return ERRORS.BAD_REQUEST
+
     # Create new company
     comp = Entreprise.create(nom=name, ville=city, taille=size, statut=status)
     db_session.add(comp)
