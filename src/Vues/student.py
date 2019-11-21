@@ -4,7 +4,7 @@ from Models.Formation import Formation
 from Models.Token import Token
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
-from models_helpers import get_student_or_none
+from models_helpers import get_student_or_none, send_basic_mail
 from errors import ERRORS
 from server import db_session, engine
 from sqlalchemy import and_, or_
@@ -284,6 +284,35 @@ def student_routes(app: flask.Flask):
     Token.query.filter_by(id_etu=id).delete()
 
     db_session.commit()
+
+    return ""
+
+  
+  @app.route('/student/mail', methods=["POST"])
+  @login_required
+  def send_mails():
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    r = get_request()
+
+    if not r.is_json:
+      return ERRORS.BAD_REQUEST
+
+    data = r.json
+
+    if not {'content', 'to', 'object'} <= set(data):
+      return ERRORS.MISSING_PARAMETERS
+
+    content, to, obj = data['content'], data['to'], data['object']
+
+    # If $to is not a list, or $to is a empty list, or some $to elements are not strings
+    if type(to) is not list or len(to) == 0 or any(map(lambda x: type(x) is not str, to)):
+      print("Addresses must be a list of string")
+      return ERRORS.BAD_REQUEST
+
+    # Send the mail...
+    send_basic_mail(content, to, obj)
 
     return ""
 

@@ -45,27 +45,20 @@ def define_auth_routes(app: flask.Flask):
 
       if not t:
         return ERRORS.INVALID_TOKEN
-      
+
       # Empty HTTP 200
       return flask.jsonify({"is_teacher": t.teacher})
 
     else:
       return ERRORS.BAD_REQUEST
 
-  # Redirect to home (useless)
-  @app.route('/auth/redirect')
-  def redirect_to_logged():
-    r = get_request()
-
-    if r.args.get('token'):
-      return flask.redirect('/', code=302)
-    else:
-      return "", 401
-
   ## Invalidate a token (remove the possibility of login)
   @app.route('/auth/token', methods=["DELETE"])
   @login_required
   def invalidate_token():
+    r = get_request()
+    token = r.headers.get('Authorization').replace('Bearer ', '', 1)
+
     if is_teacher():
       Token.query.filter_by(token=token).delete()
       db_session.commit()
@@ -104,7 +97,7 @@ def define_auth_routes(app: flask.Flask):
       try:
         choosen_count = int(r.args.get('count'))
 
-        if choosen_count > 0 and choosen_count <= 100:
+        if 0 < choosen_count <= 100:
           length = choosen_count
       except:
         return ERRORS.BAD_REQUEST

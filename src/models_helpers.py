@@ -1,6 +1,6 @@
 from Models.Etudiant import Etudiant
 from helpers import get_user, is_teacher, get_request
-from typing import Optional
+from typing import Optional, List
 
 def get_etu_object_for_logged_user() -> Optional[Etudiant]:
   user = get_user()
@@ -26,3 +26,12 @@ def get_student_or_none() -> Optional[Etudiant]:
         return None
   else:
     return get_etu_object_for_logged_user()
+
+
+def send_basic_mail(content: str, to: List[str], obj: str):
+  # TODO interpolation de \student (par exemple)
+
+  for student in to:
+    # todo send the mail
+    pass
+

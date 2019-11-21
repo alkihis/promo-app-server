@@ -44,7 +44,8 @@ class User:
 login_manager = LoginManager()
 
 def set_app_login_manager(app):
-  login_manager.setup_app(app)
+  login_manager.init_app(app)
+  # login_manager.setup_app(app)
   app.session_interface = CustomSessionInterface()
 
 class CustomSessionInterface(SecureCookieSessionInterface):
