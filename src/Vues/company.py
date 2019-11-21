@@ -1,7 +1,8 @@
 import flask
 from flask_login import login_required
 from Models.Entreprise import Entreprise
-from helpers import is_teacher, get_request, get_user, create_token_for, convert_date
+from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
+from models_helpers import get_student_or_none
 from errors import ERRORS
 from server import db_session
 from typing import List, Tuple, Dict
@@ -12,12 +13,9 @@ def define_company_endpoints(app: flask.Flask):
   @login_required
   def make_entreprise():
     r = get_request()
-    user_id = r.args.get('user_id', None)
+    stu = get_student_or_none()
 
-    if not is_teacher():
-      user_id = get_user().id_etu
-
-    if not user_id or not r.is_json:
+    if not stu or not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -25,16 +23,17 @@ def define_company_endpoints(app: flask.Flask):
     if not {'name', 'city', 'size', 'status'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
 
-      name, city, size, status = data['name'], data['city'], data['size'], data['status']
+    name, city, size, status = data['name'], data['city'], data['size'], data['status']
 
-      ## Search for similar company TODO improve search
-      f = Entreprise.query.filter(and_(Entreprise.nom.ilike(f"{name}"), Entreprise.ville.ilike(f"{city}"))).all()
-      
-      if len(f):
-        return flask.jsonify(f[0]), 200
+    ## Search for similar company TODO improve search
+    f = Entreprise.query.filter(and_(Entreprise.nom.ilike(f"{name}"), Entreprise.ville.ilike(f"{city}"))).all()
+    
+    if len(f):
+      return flask.jsonify(f[0])
 
+    # TODO add checks for size and status (enum voir TS interfaces.ts)
     # Create new company
-    comp = Entreprise.create(nom=name, ville=city, taille=size, statut=status )
+    comp = Entreprise.create(nom=name, ville=city, taille=size, statut=status)
     db_session.add(comp)
     db_session.commit()
 
@@ -56,17 +55,17 @@ def define_company_endpoints(app: flask.Flask):
     if 'name' in r.args:
       name = r.args['name']
     if 'city' in r.args:
-      ville = r.args['city']
+      city = r.args['city']
     if 'included' in r.args and is_truthy(r.args['included']):
       included = True
 
     # get all company
-    company: List[Company] = Company.query.all()
+    company: List[Entreprise] = Entreprise.query.all()
 
     accepted: List[Tuple[Entreprise, Dict[str, float]]] = []
 
     # Find contacts that matches the query
-    for f in contacts:
+    for f in company:
       dist_name = 0
       dist_city = 0
       if name:

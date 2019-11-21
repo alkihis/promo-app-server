@@ -29,8 +29,7 @@ class Stage(db):
 
   id_contact = Column(
     Integer,
-    ForeignKey('contact.id_contact', ondelete='SET NULL'),
-    nullable=False
+    ForeignKey('contact.id_contact', ondelete='SET NULL')
   )
   contact: Contact = relationship('Contact')
 
@@ -51,11 +50,12 @@ class Stage(db):
       id_etu=id_etu
     )
 
-  def to_json(self):
+  def to_json(self, full = False):
     return {
       'id': self.id_stage,
       'during': self.promo,
-      'owner': self.etudiant,
-      'company': self.entreprise,
+      'owner': self.etudiant if full else self.id_etu,
+      'company': self.entreprise.to_json(),
+      'domain': self.domaine.domaine,
       'referrer': self.contact
     }

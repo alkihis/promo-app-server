@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Column, Boolean, ForeignKey, Date
+from sqlalchemy import Integer, String, Column, ForeignKey, Date
 from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Entreprise import Entreprise
@@ -16,7 +16,6 @@ class Emploi(db):
   fin = Column(Date)
   contrat = Column(String, nullable=False)
   salaire = Column(Integer)
-  is_public = Column(Boolean, nullable=False)
   niveau = Column(String, nullable=False)
   
   id_entreprise = Column(
@@ -47,27 +46,29 @@ class Emploi(db):
   etudiant: Etudiant = relationship('Etudiant', foreign_keys=[id_etu])
 
   @staticmethod
-  def create(debut: date, fin: date, contrat: str, id_entreprise: int, id_domaine: int, id_contact: int, id_etu: int, salaire: int = None):
+  def create(debut: date, fin: date, contrat: str, niveau: str, id_entreprise: int, id_domaine: int, id_contact: int, id_etu: int, salaire: int = None):
     return Emploi(
       debut=debut, 
       fin=fin,
       contrat=contrat,
       salaire=salaire,
+      niveau=niveau,
       id_entreprise=id_entreprise, 
       id_domaine=id_domaine, 
       id_contact=id_contact,
       id_etu=id_etu
     )
 
-  def to_json(self):
+  def to_json(self, full = False):
     return {
       'id': self.id_emploi,
-      'owner': self.etudiant,
-      'company': self.entreprise,
+      'owner': self.etudiant if full else self.id_etu,
+      'company': self.entreprise.to_json(),
       'referrer': self.contact,
       'domain': self.domaine.domaine,
       'from': self.debut,
       'to': self.fin,
       'type': self.contrat,
-      'wage': self.salaire
+      'wage': self.salaire,
+      'level': self.niveau,
     }

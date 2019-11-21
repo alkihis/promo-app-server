@@ -5,7 +5,7 @@ CREATE TABLE Etudiant (
   nom TEXT NOT NULL,
   prenom TEXT NOT NULL,
   mail TEXT NOT NULL,
-  birthdate TEXT,
+  derniere_modification DATETIME NOT NULL,
   annee_entree TEXT NOT NULL,
   annee_sortie TEXT,
   entree_en_m1 BOOLEAN NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE Emploi (
   fin TEXT, -- DATETIME or "now" or null si pas fini
   contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance" TODO VOIR CONTRATS
   salaire INTEGER, -- Peut être non précisé
-  is_public BOOLEAN NOT NULL,
+  -- is_public BOOLEAN NOT NULL, -- Déplacé dans Entreprise
   niveau TEXT NOT NULL,
 
   FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE,

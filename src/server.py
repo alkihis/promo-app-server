@@ -5,6 +5,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import date
 from json import JSONEncoder
+import os
 
 ## File for creating/enabling connection to SQLite database, define ORM models, affect it to Flask app.
 
@@ -18,7 +19,7 @@ def _default(self, obj):
     return getattr(obj.__class__, "to_json", _default.default)(obj)
 
 _default.default = JSONEncoder.default  # Save unmodified default.
-JSONEncoder.default = _default # Replace it
+JSONEncoder.default = _default  # Replace it
 
 ##### End JSON encoder
 
@@ -29,6 +30,7 @@ db = declarative_base()
 db.query = db_session.query_property()
 
 # Import all the models
+# noinspection PyUnresolvedReferences
 import Models.Contact
 import Models.Etudiant
 import Models.Entreprise

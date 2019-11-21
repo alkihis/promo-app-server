@@ -16,7 +16,7 @@ class Token(db):
     ForeignKey('etudiant.id_etu', ondelete="CASCADE"),
     nullable=True
   )
-  etudiant: Etudiant = relationship('Etudiant', foreign_keys=[id_etu])
+  etudiant: Etudiant = relationship('Etudiant', cascade="all,delete", foreign_keys=[id_etu])
 
   @staticmethod
   def create(token: str, teacher: bool, id_etu: int = None):

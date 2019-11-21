@@ -30,7 +30,6 @@ def define_domain_endpoints(app: flask.Flask):
     f = Domaine.query.filter(Domaine.domaine.ilike(f"{domain}")).all()
 
     if len(f):
-      attach_previous_domain(user_id, f[0].id_dom)
       return flask.jsonify(f[0]), 200
 
     # Create new domain
@@ -47,36 +46,3 @@ def define_domain_endpoints(app: flask.Flask):
   @login_required
   def fetch_domains():
     return flask.jsonify(Domaine.query.all())
-
-  @app.route('/domain/related')
-  @login_required
-  def find_relative_domains():
-    r = get_request()
-    domain: str = None
-    included = False
-
-    if 'domain' in r.args:
-      domain = r.args['domain']
-    if 'included' in r.args and is_truthy(r.args['included']):
-      included = True
-
-    # get all domains
-    domains: List[Domaine] = Domaine.query.all()
-
-    accepted: List[Tuple[Domaine, Dict[str, float]]] = []
-
-    # Find domains that matches the query
-    for f in domains:
-      dist_domain = 0
-      if domain:
-        dist_domain = Levenshtein.ratio(f.domaine, domain)
-      
-      # Search for substrings
-      if included:
-        if domain and domain in f.nom:
-          accepted.append((f, {'domain': dist_domain}))
-
-    # Sort the accepted by max between dist_domain and dist_location
-    accepted.sort(key=lambda x: max((x[1]['domain'])), reverse=True)
-
-    return flask.jsonify(accepted)

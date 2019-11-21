@@ -1,13 +1,16 @@
 import flask
 from Models.Etudiant import Etudiant
 from Models.Formation import Formation
+from Models.Token import Token
 from flask_login import login_required
-from helpers import is_teacher, get_request, get_user, create_token_for, convert_date
+from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
+from models_helpers import get_student_or_none, send_basic_mail
 from errors import ERRORS
-from server import db_session
+from server import db_session, engine
 from sqlalchemy import and_, or_
 import datetime
 import re
+from typing import List
 ### Vues pour l'API /student
 
 def student_routes(app: flask.Flask):
@@ -18,8 +21,7 @@ def student_routes(app: flask.Flask):
     if is_teacher():
       return ERRORS.INVALID_CREDENTIALS
 
-    currently_logged = get_user().id_etu
-    return get_id(currently_logged)
+    return flask.jsonify(get_student_or_none())
 
   @app.route('/student/all')
   @login_required
@@ -27,11 +29,40 @@ def student_routes(app: flask.Flask):
     if not is_teacher():
       return ERRORS.INVALID_CREDENTIALS
 
-    return flask.jsonify(Etudiant.query.all())
+    full = False
+
+    r = get_request()
+    if 'full' in r.args:
+      full = is_truthy(r.args['full'])
+
+    if not full:
+      return flask.jsonify(Etudiant.query.all())
+
+    all_stu = [e.to_json(full) for e in Etudiant.query.all()]
+
+    companies = {}
+    for student in all_stu:
+      for job in student['jobs']:
+        if job['company']['id'] not in companies:
+          companies[job['company']['id']] = job['company']
+        
+        job['company'] = job['company']['id']
+        
+
+      for internship in student['internships']:
+        if internship['company']['id'] not in companies:
+          companies[internship['company']['id']] = internship['company']
+
+        internship['company'] = internship['company']['id']
+
+    return flask.jsonify({ 'students': all_stu, 'companies': companies })
 
   # Get a single Etudiant by ID
   @app.route('/student/<int:id>', methods=["GET"])
   def get_id(id: int):
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+    
     e: Etudiant = Etudiant.query.filter_by(id_etu=id).one_or_none()
 
     if not e:
@@ -78,8 +109,8 @@ def student_routes(app: flask.Flask):
       return ERRORS.BAD_REQUEST
 
     try:
-      if int(year_in) > current_date or int(year_in) <= 2015:
-        return ERRORS.CONFLICT
+      if int(year_in) > current_date or int(year_in) < 2015:
+        return ERRORS.BAD_REQUEST
     except:
       return ERRORS.BAD_REQUEST
     
@@ -96,28 +127,14 @@ def student_routes(app: flask.Flask):
     return flask.jsonify(etu)
 
 
-  @app.route('/student/update', methods=['POST'])
+  @app.route('/student/modify', methods=['POST'])
   @login_required
   def update_student():
     r = get_request()
-    student: Etudiant = None
+    student: Etudiant = get_student_or_none()
 
-    if not r.is_json:
+    if not student or not r.is_json:
       return ERRORS.BAD_REQUEST
-
-    if is_teacher():
-      if 'user_id' in r.args:
-        user_id = int(r.args['user_id'])
-        st = Etudiant.query.filter_by(id_etu=user_id).one_or_none()
-
-        if st:
-          student = st
-        else:
-          return ERRORS.RESOURCE_NOT_FOUND
-      else:
-        return ERRORS.MISSING_PARAMETERS
-    else:
-      student = Etudiant.query.filter_by(id_etu=get_user().id_etu).first()
 
     data = r.json
 
@@ -125,14 +142,16 @@ def student_routes(app: flask.Flask):
       # TODO Check validity
       student.prenom = data['first_name']
     if 'last_name' in data:
-      # Check validity
+      # TODO Check validity
       student.nom = data['last_name']
     if 'year_in' in data:
-      # Check validity
+      # TODO Check validity
       student.annee_entree = data['year_in']
     if 'year_out' in data:
+      # TODO Check validity
       student.annee_sortie = data['year_out']
     if 'email' in data:
+      # TODO Check validity
       student.mail = data['email']
     if 'previous_formation' in data:
       if type(data['previous_formation']) == int:
@@ -142,10 +161,12 @@ def student_routes(app: flask.Flask):
         if desired:
           student.cursus_anterieur = data['previous_formation']
         else:
+          db_session.rollback()
           return ERRORS.RESOURCE_NOT_FOUND
       elif data['previous_formation'] is None:
         student.cursus_anterieur = None
       else:
+        db_session.rollback()
         return ERRORS.BAD_REQUEST
     if 'next_formation' in data:
       if type(data['next_formation']) == int:
@@ -155,14 +176,26 @@ def student_routes(app: flask.Flask):
         if desired:
           student.reorientation = data['next_formation']
         else:
+          db_session.rollback()
           return ERRORS.RESOURCE_NOT_FOUND
       elif data['next_formation'] is None:
         student.reorientation = None
       else:
+        db_session.rollback()
         return ERRORS.BAD_REQUEST
+    if 'entered_in' in data:
+      if data['entered_in'] != 'M1' and data['entered_in'] != 'M2':
+        db_session.rollback()
+        return ERRORS.BAD_REQUEST
+      
+      student.entree_en_m1 = data['entered_in'] == 'M1'
+    if 'graduated' in data and type(data['graduated']) == bool:
+      student.diplome = data['graduated']
 
     # Save changes
     db_session.commit()
+
+    print(student.to_json())
     
     return flask.jsonify(student)
 
@@ -220,6 +253,20 @@ def student_routes(app: flask.Flask):
     return flask.jsonify(results)
 
 
+  @app.route('/student/confirm')
+  @login_required
+  def confirm_actual_data_student():
+    student: Etudiant = get_student_or_none()
+
+    if not student:
+      return ERRORS.BAD_REQUEST
+
+    student.refresh_update()
+    db_session.commit()
+
+    return flask.jsonify(student)
+
+
   @app.route('/student/<int:id>', methods=["DELETE"])
   @login_required
   def delete_student(id: int):
@@ -233,9 +280,39 @@ def student_routes(app: flask.Flask):
       return ""
 
     Etudiant.query.filter_by(id_etu=id).delete()
+    # delete cascade does not work??
+    Token.query.filter_by(id_etu=id).delete()
 
-    db_session.delete(etu)
     db_session.commit()
+
+    return ""
+
+  
+  @app.route('/student/mail', methods=["POST"])
+  @login_required
+  def send_mails():
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    r = get_request()
+
+    if not r.is_json:
+      return ERRORS.BAD_REQUEST
+
+    data = r.json
+
+    if not {'content', 'to', 'object'} <= set(data):
+      return ERRORS.MISSING_PARAMETERS
+
+    content, to, obj = data['content'], data['to'], data['object']
+
+    # If $to is not a list, or $to is a empty list, or some $to elements are not strings
+    if type(to) is not list or len(to) == 0 or any(map(lambda x: type(x) is not str, to)):
+      print("Addresses must be a list of string")
+      return ERRORS.BAD_REQUEST
+
+    # Send the mail...
+    send_basic_mail(content, to, obj)
 
     return ""
 

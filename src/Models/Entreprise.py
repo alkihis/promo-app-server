@@ -1,6 +1,7 @@
 from sqlalchemy import Integer, String, Column
 from sqlalchemy.orm import relationship, Query
 from server import db
+from enum import Enum
 
 class Entreprise(db):
   __tablename__ = "entreprise"

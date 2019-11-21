@@ -1,10 +1,12 @@
 import flask
 from Models.Entreprise import Entreprise
+from Models.Contact import Contact
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, is_truthy
 from errors import ERRORS
 from server import db_session
 from typing import List, Tuple, Dict
+from sqlalchemy import and_, or_
 
 
 def define_contact_endpoints(app: flask.Flask):
@@ -12,12 +14,7 @@ def define_contact_endpoints(app: flask.Flask):
   @login_required
   def make_contact():
     r = get_request()
-    user_id = r.args.get('user_id', None)
-
-    if not is_teacher():
-      user_id = get_user().id_etu
-
-    if not user_id or not r.is_json:
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -47,17 +44,29 @@ def define_contact_endpoints(app: flask.Flask):
       return ERRORS.BAD_REQUEST
 
     # Create new contact
-    cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise )
+    cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise)
     db_session.add(cont)
     db_session.commit()
-
 
     return flask.jsonify(cont), 201
 
   @app.route('/contact/all')
   @login_required
   def fetch_contact():
-    return flask.jsonify(Contact.query.all())
+    r = get_request()
+
+    id_e = None
+    if 'company' in r.args:
+      try:
+        id_e = int(r.args['company'])
+      except:
+        pass
+      
+    if not id_e or id_e < 0:
+      return ERRORS.MISSING_PARAMETERS
+
+    return flask.jsonify(Contact.query.filter_by(id_entreprise=id_e).all())
+
 
   @app.route('/contact/related')
   @login_required

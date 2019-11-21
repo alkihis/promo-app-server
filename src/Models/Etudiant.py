@@ -1,8 +1,8 @@
-from sqlalchemy import Integer, String, Boolean, Column, Date, ForeignKey
+from sqlalchemy import Integer, String, Boolean, Column, Date, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, Query
 from server import db
 from Models.Formation import Formation
-from datetime import date
+from datetime import date, datetime
 
 class Etudiant(db):
   __tablename__ = "etudiant"
@@ -12,11 +12,11 @@ class Etudiant(db):
   nom = Column(String, nullable=False)
   prenom = Column(String, nullable=False)
   mail = Column(String, nullable=False)
-  birthdate = Column(Date)
   annee_entree = Column(String, nullable=False)
   annee_sortie = Column(String)
   entree_en_m1 = Column(Boolean, nullable=False)
   diplome = Column(Boolean, nullable=False, default=False)
+  derniere_modification = Column(DateTime, nullable=False)
 
   cursus_anterieur = Column(Integer,
     ForeignKey('formation.id_form', ondelete='SET NULL'),
@@ -30,6 +30,9 @@ class Etudiant(db):
   )
   reorientation_obj: Formation = relationship('Formation', foreign_keys=[reorientation])
 
+  def refresh_update(self):
+    self.derniere_modification = datetime.now()
+
   @staticmethod
   def create(
     nom: str, 
@@ -37,7 +40,6 @@ class Etudiant(db):
     mail: str, 
     annee_entree: str, 
     entree_en_m1: bool,
-    birthdate: date = None, 
     annee_sortie: str = None, 
     cursus_anterieur: int = None,
     reorientation: int = None,
@@ -46,18 +48,18 @@ class Etudiant(db):
     return Etudiant(
       nom=nom, 
       prenom=prenom, 
-      mail=mail, 
-      birthdate=birthdate, 
+      mail=mail,
       annee_entree=annee_entree,
       annee_sortie=annee_sortie,
       cursus_anterieur=cursus_anterieur,
       reorientation=reorientation,
       entree_en_m1=entree_en_m1,
       diplome=diplome,
+      derniere_modification=datetime.now()
     )
 
-  def to_json(self):
-    return {
+  def to_json(self, full = False):
+    etu = {
       'id': self.id_etu,
       'last_name': self.nom,
       'first_name': self.prenom,
@@ -67,5 +69,19 @@ class Etudiant(db):
       'email': self.mail,
       'graduated': self.diplome,
       'previous_formation': None if not self.cursus_obj else self.cursus_obj.to_json(),
-      'next_formation': None if not self.reorientation_obj else self.reorientation_obj.to_json()
+      'next_formation': None if not self.reorientation_obj else self.reorientation_obj.to_json(),
+      'last_update': self.derniere_modification
     }
+
+    if full:
+      # Import cyclique, ne peut être fait en haut du fichier
+      from Models.Emploi import Emploi
+      from Models.Stage import Stage
+      
+      emplois = Emploi.query.filter_by(id_etu=self.id_etu).all()
+      etu['jobs'] = [e.to_json() for e in emplois]
+
+      stages = Stage.query.filter_by(id_etu=self.id_etu).all()
+      etu['internships'] = [e.to_json() for e in stages]
+
+    return etu

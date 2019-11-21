@@ -1,6 +1,5 @@
 from flask import request, Request
 from server import db_session
-import os
 import datetime
 import timestring
 from flask_login import current_user
