@@ -5,7 +5,7 @@
 		}
 	],
 	"settings": {
-		"python.pythonPath": "./.env/bin/python",
+		"python.pythonPath": "./.envs/bin/python",
 		"sqltools.connections": [
 			{
 				"askForPassword": true,
