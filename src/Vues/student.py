@@ -140,19 +140,70 @@ def student_routes(app: flask.Flask):
 
     if 'first_name' in data:
       # TODO Check validity
+      special_check = r"^[A-Za-z-_ ]+$" 
+      if not re.match(special_check,data['first_name']):
+        return ERRORS.BAD_REQUEST
+
       student.prenom = data['first_name']
+
     if 'last_name' in data:
       # TODO Check validity
+      special_check = r"^[A-Za-z-_ ]+$" 
+      if not re.match(special_check,data['last_name']):
+        return ERRORS.BAD_REQUEST
+
       student.nom = data['last_name']
-    if 'year_in' in data:
+
+    if 'year_in' and 'year_out' in data:
       # TODO Check validity
+      try:
+        year_in = int(data['year_in'])
+      except:
+        ERRORS.BAD_REQUEST
+      
+      try:
+        year_out = int(data['year_out'])
+      except:
+        ERRORS.BAD_REQUEST
+                  
+      if year_in > year_out:
+        ERRORS.BAD_REQUEST
+
       student.annee_entree = data['year_in']
-    if 'year_out' in data:
-      # TODO Check validity
       student.annee_sortie = data['year_out']
+
+
+    elif 'year_in' in data:
+      try:
+        year_in = int(data['year_in'])
+      except:
+        ERRORS.BAD_REQUEST
+
+      if year_in >= student.annee_sortie:
+        return ERRORS.BAD_REQUEST
+      
+      student.annee_entree = data['year_in']
+
+    elif 'year_out' in data:
+      # TODO Check validity
+      try:
+          year_out = int(data['year_out'])
+      except:
+        ERRORS.BAD_REQUEST
+
+      if student.annee_entree >= year_out:
+        return ERRORS.BAD_REQUEST
+
+      student.annee_sortie = data['year_out']
+
     if 'email' in data:
       # TODO Check validity
+      email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
+      if not re.match(email_catch, data['email']):
+        return ERRORS.BAD_REQUEST
+
       student.mail = data['email']
+      
     if 'previous_formation' in data:
       if type(data['previous_formation']) == int:
         # Check existance of formation

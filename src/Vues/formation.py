@@ -27,7 +27,7 @@ def define_formation_endpoints(app: flask.Flask):
 
     branch, location, level = data['name'], data['location'], data['level']
 
-    # TODO check level: must be in ENUM
+    # Check level: must be in ENUM
     if type(level) is not str:
       return ERRORS.BAD_REQUEST
     
