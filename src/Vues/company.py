@@ -5,9 +5,9 @@ from Models.Contact import Contact
 from Models.Emploi import Emploi
 from Models.Stage import Stage
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
-from models_helpers import get_student_or_none
+from models_helpers import get_student_or_none, get_location_of_company
 from errors import ERRORS
-from server import db_session
+from server import db_session, engine
 from typing import List, Tuple, Dict
 from sqlalchemy import and_, or_
 
@@ -34,9 +34,11 @@ def define_company_endpoints(app: flask.Flask):
     if len(f):
       return flask.jsonify(f[0])
 
+    gps_coords = get_location_of_company(city)
+
     # TODO add checks for size and status (enum voir TS interfaces.ts)
     # Create new company
-    comp = Entreprise.create(nom=name, ville=city, taille=size, statut=status)
+    comp = Entreprise.create(nom=name, ville=city, taille=size, statut=status, lat=gps_coords[0], lng=gps_coords[1])
     db_session.add(comp)
     db_session.commit()
 
@@ -69,7 +71,13 @@ def define_company_endpoints(app: flask.Flask):
 
     # Todo add check for every property
     e.nom = name
-    e.ville = city
+
+    if city != e.ville:
+      gps_coords = get_location_of_company(city)
+      e.ville = city
+      e.lat = gps_coords[0]
+      e.lng = gps_coords[1]
+
     e.taille = size
     e.statut = status
     db_session.commit()
@@ -211,3 +219,22 @@ def define_company_endpoints(app: flask.Flask):
     accepted.sort(key=lambda x: max((x[1]['name'], x[1]['city'])), reverse=True)
 
     return flask.jsonify(accepted)
+
+
+  @app.route('/company/map')
+  def map_of_company():
+    with engine.connect() as conn:
+      rs = conn.execute("""
+        SELECT DISTINCT ville, lat, lng, COUNT(*) as count 
+        FROM Entreprise e 
+        WHERE lat IS NOT NULL 
+        GROUP BY ville, lat, lng
+      """)
+
+      villes = []
+      for row in rs:
+        villes.append(row)
+
+      return flask.jsonify([{"lat": x[1], "lng": x[2], "town": x[0], "count": int(x[3])} for x in villes])
+
+    return ERRORS.SERVER_ERROR

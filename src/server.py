@@ -59,3 +59,5 @@ def clean_db():
 
 def init_db():
   db.metadata.create_all(bind=engine)
+  db_session.add(Models.Domaine.Domaine.create("other", "Autre"))
+  db_session.commit()

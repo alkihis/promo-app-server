@@ -12,17 +12,21 @@ class Entreprise(db):
   ville = Column(String, nullable=False)
   taille = Column(String, nullable=False)
   statut = Column(String, nullable=False)
+  lat = Column(String)
+  lng = Column(String)
 
   stages = relationship('Stage', back_populates="entreprise")
   emplois = relationship('Emploi', back_populates="entreprise")
 
   @staticmethod
-  def create(nom: str, ville: str, taille: str, statut: str):
+  def create(nom: str, ville: str, taille: str, statut: str, lat: str = None, lng: str = None):
     return Entreprise(
       nom=nom,
       ville=ville,
       taille=taille,
-      statut=statut
+      statut=statut,
+      lat=lat,
+      lng=lng
     )
   
   def to_json(self):

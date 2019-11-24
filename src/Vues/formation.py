@@ -70,7 +70,10 @@ def define_formation_endpoints(app: flask.Flask):
 
     # TODO check each setting validity
     f.filiere = branch
-    f.lieu = location
+    # Query le lieu pr obtenir lat & long si lieu != location
+    if f.lieu != location:
+      f.lieu = location
+
     f.niveau = level
     db_session.commit()
 

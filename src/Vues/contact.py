@@ -74,6 +74,26 @@ def define_contact_endpoints(app: flask.Flask):
     return flask.jsonify(Contact.query.filter_by(id_entreprise=id_e).all())
 
 
+  @app.route('/contact/in')
+  @login_required
+  def fetch_contact_of_location():
+    r = get_request()
+
+    cmps: List[Entreprise] = []
+    if 'town' in r.args:
+      cmps = Entreprise.query.filter_by(ville=r.args['town']).all()
+
+    contacts: List[Contact] = []
+
+    for c in cmps:
+      contacts_of_cmp = Contact.query.filter_by(id_entreprise=c.id_entreprise).all()
+
+      for contact in contacts_of_cmp:
+        contacts.append(contact)
+
+    return flask.jsonify([contact.to_json(full=True) for contact in contacts])
+    
+
   @app.route('/contact/modify', methods=["POST"])
   @login_required
   def modify_contact():
