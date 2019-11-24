@@ -48,10 +48,12 @@ def define_company_endpoints(app: flask.Flask):
   @app.route('/company/modify', methods=["POST"])
   @login_required
   def modify_entreprise():
-    r = get_request()
-    stu = get_student_or_none()
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
 
-    if not stu or not r.is_json:
+    r = get_request()
+
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -60,6 +62,7 @@ def define_company_endpoints(app: flask.Flask):
       return ERRORS.MISSING_PARAMETERS
 
     if type(data['id']) is not int:
+      
       return ERRORS.BAD_REQUEST
 
     e: Entreprise = Entreprise.query.filter_by(id_entreprise=int(data['id'])).one_or_none()
