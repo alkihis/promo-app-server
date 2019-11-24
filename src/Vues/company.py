@@ -1,6 +1,9 @@
 import flask
 from flask_login import login_required
 from Models.Entreprise import Entreprise
+from Models.Contact import Contact
+from Models.Emploi import Emploi
+from Models.Stage import Stage
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
 from models_helpers import get_student_or_none
 from errors import ERRORS
@@ -39,10 +42,130 @@ def define_company_endpoints(app: flask.Flask):
 
     return flask.jsonify(comp), 201
 
+
+  @app.route('/company/modify', methods=["POST"])
+  @login_required
+  def modify_entreprise():
+    r = get_request()
+    stu = get_student_or_none()
+
+    if not stu or not r.is_json:
+      return ERRORS.BAD_REQUEST
+
+    data = r.json
+
+    if not {'name', 'town', 'size', 'status', 'id'} <= set(data):
+      return ERRORS.MISSING_PARAMETERS
+
+    if type(data['id']) is not int:
+      return ERRORS.BAD_REQUEST
+
+    e: Entreprise = Entreprise.query.filter_by(id_entreprise=int(data['id'])).one_or_none()
+
+    if not e:
+      return ERRORS.RESOURCE_NOT_FOUND
+
+    name, city, size, status = data['name'], data['town'], data['size'], data['status']
+
+    # Todo add check for every property
+    e.nom = name
+    e.ville = city
+    e.taille = size
+    e.statut = status
+    db_session.commit()
+
+    return flask.jsonify(e)
+
+
   @app.route('/company/all')
   @login_required
   def fetch_company():
     return flask.jsonify(Entreprise.query.all())
+
+  
+  @app.route('/company/<int:id>', methods=["GET"])
+  @login_required
+  def get_company(id: int):
+    e = Entreprise.query.filter_by(id_entreprise=id).one_or_none()
+
+    if not e:
+      return ERRORS.RESOURCE_NOT_FOUND
+
+    return flask.jsonify(e)
+
+
+  @app.route('/company/merge', methods=["POST"])
+  @login_required
+  def merge_companies():
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    r = get_request()
+
+    if not r.is_json:
+      return ERRORS.BAD_REQUEST
+
+    data = r.json
+
+    if not {'main', 'children'} <= set(data):
+      return ERRORS.MISSING_PARAMETERS
+
+    main, children = data['main'], data['children']
+
+    if type(main) is not int or type(children) is not list:
+      return ERRORS.BAD_REQUEST
+
+    main_company: Entreprise = Entreprise.query.filter_by(id_entreprise=main).one_or_none()
+
+    if not main_company:
+      return ERRORS.RESOURCE_NOT_FOUND
+
+    children_companies: List[Entreprise] = []
+    for c in children:
+      if type(c) is not int:
+        return ERRORS.BAD_REQUEST
+
+      ent = Entreprise.query.filter_by(id_entreprise=c).one_or_none()
+      if not ent:
+        return ERRORS.RESOURCE_NOT_FOUND
+
+      children_companies.append(ent)
+
+    # For each job/internship relied to children_companies, set main_company
+    for c in children_companies:
+      Emploi.query.filter_by(id_entreprise=c.id_entreprise).update({'id_entreprise': main_company.id_entreprise})
+      Stage.query.filter_by(id_entreprise=c.id_entreprise).update({'id_entreprise': main_company.id_entreprise})
+
+    # Delete every children company
+    for c in children_companies:
+      Contact.query.filter_by(id_entreprise=c.id_entreprise).update({'id_entreprise': main_company.id_entreprise})
+      db_session.delete(c)
+
+    db_session.commit()
+    return ""
+
+
+  @app.route('/company/<int:id>', methods=["DELETE"])
+  @login_required
+  def delete_company(id: int):
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    c: Entreprise = Entreprise.query.filter_by(id_entreprise=id).one_or_none()
+
+    if not c:
+      return ERRORS.RESOURCE_NOT_FOUND
+
+    # Delete all manuel
+    Stage.query.filter_by(id_entreprise=id).delete()
+    Emploi.query.filter_by(id_entreprise=id).delete()
+    Contact.query.filter_by(id_entreprise=id).delete()
+    
+    db_session.delete(c)
+    db_session.commit()
+
+    return ""
+
 
   @app.route('/company/related')
   @login_required

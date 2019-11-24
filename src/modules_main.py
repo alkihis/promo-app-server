@@ -49,6 +49,9 @@ define_internship_endpoints(bp)
 from Vues.job import define_job_endpoints
 define_job_endpoints(bp)
 
+from Vues.teacher import define_teacher_endpoints
+define_teacher_endpoints(bp)
+
 # This should be after all bp definitions !
 app.register_blueprint(bp, url_prefix='/api')
 
