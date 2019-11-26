@@ -8,13 +8,15 @@ class Domaine(db):
 
   id_domaine = Column(Integer, primary_key=True)
   domaine = Column(String, nullable=False)
+  nom = Column(String, nullable=False)
 
   @staticmethod
-  def create(domaine: str):
-    return Domaine(domaine=domaine)
+  def create(domaine: str, nom: str):
+    return Domaine(domaine=domaine, nom=nom)
 
   def to_json(self):
     return {
       'id': self.id_domaine,
-      'domaine': self.domaine
+      'domain': self.domaine,
+      'name': self.nom
     }

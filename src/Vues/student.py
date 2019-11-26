@@ -367,4 +367,30 @@ def student_routes(app: flask.Flask):
 
     return ""
 
-    
+  @app.route('/student/lost_token')
+  def lost_token():
+    r = get_request()
+
+    if not 'email' in r.args or type(r.args['email']) is not str:
+      return ERRORS.BAD_REQUEST
+
+    email = r.args['email']
+
+    tk: Token = Token.query.join(Etudiant).filter_by(mail=email).all()
+
+    if len(tk):
+      ## TODO send email with token to student
+      # URL: http://<site-url>/login?token={tk.token}
+      pass
+
+    # Generate a token
+    st: Etudiant = Etudiant.query.filter_by(mail=email).one_or_none()
+
+    if not st:
+      return ERRORS.RESOURCE_NOT_FOUND
+
+    tk = create_token_for(st.id_etu, False)
+
+    ## TODO send email with token to student
+    # URL: http://<site-url>/login?token={tk.token}
+

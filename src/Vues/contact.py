@@ -1,5 +1,7 @@
 import flask
 from Models.Entreprise import Entreprise
+from Models.Emploi import Emploi
+from Models.Stage import Stage
 from Models.Contact import Contact
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, is_truthy
@@ -70,3 +72,82 @@ def define_contact_endpoints(app: flask.Flask):
       return ERRORS.MISSING_PARAMETERS
 
     return flask.jsonify(Contact.query.filter_by(id_entreprise=id_e).all())
+
+
+  @app.route('/contact/in')
+  @login_required
+  def fetch_contact_of_location():
+    r = get_request()
+
+    cmps: List[Entreprise] = []
+    if 'town' in r.args:
+      cmps = Entreprise.query.filter_by(ville=r.args['town']).all()
+
+    contacts: List[Contact] = []
+
+    for c in cmps:
+      contacts_of_cmp = Contact.query.filter_by(id_entreprise=c.id_entreprise).all()
+
+      for contact in contacts_of_cmp:
+        contacts.append(contact)
+
+    return flask.jsonify([contact.to_json(full=True) for contact in contacts])
+    
+
+  @app.route('/contact/modify', methods=["POST"])
+  @login_required
+  def modify_contact():
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    r = get_request()
+    if not r.is_json:
+      return ERRORS.BAD_REQUEST
+
+    data = r.json
+
+    if not {'name', 'mail', 'id'} <= set(data):
+      return ERRORS.MISSING_PARAMETERS
+
+    name, mail, id_contact = data['name'], data['mail'], data['id']
+
+    if type(id_contact) is not int:
+      return ERRORS.BAD_REQUEST
+
+    c: Contact = Contact.query.filter_by(id_contact=id_contact).one_or_none()
+
+    if not c:
+      return ERRORS.RESOURCE_NOT_FOUND
+    
+
+    email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
+    if not re.match(email_catch, mail):
+      return ERRORS.BAD_REQUEST
+
+    # Create new contact
+    c.mail = mail
+    c.nom = name
+    db_session.commit()
+
+    return flask.jsonify(c)
+
+
+  @app.route('/contact/<int:id>', methods=["DELETE"])
+  @login_required
+  def delete_contact(id: int):
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+
+    c = Contact.query.filter_by(id_contact=id).one_or_none()
+
+    if not c:
+      return ""
+
+    Emploi.query.filter_by(id_contact=id).update({"id_contact": None})
+    Stage.query.filter_by(id_contact=id).update({"id_contact": None})
+
+    db_session.delete(c)
+    db_session.commit()
+
+    return ""
+

@@ -22,10 +22,10 @@ class Contact(db):
   def create(nom: str, mail: str, id_entreprise: int):
     return Contact(nom=nom, mail=mail, id_entreprise=id_entreprise)
 
-  def to_json(self):
+  def to_json(self, full = False):
     return {
       'id': self.id_contact,
       'name': self.nom,
       'email': self.mail,
-      'linked_to': self.id_entreprise
+      'linked_to': self.id_entreprise if not full else self.entreprise
     }
