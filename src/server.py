@@ -3,7 +3,7 @@ from const import DATABASE
 from sqlalchemy import create_engine, Integer, String, Boolean, Column, Date, ForeignKey
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
-from datetime import date
+from datetime import date, datetime
 from json import JSONEncoder
 import os
 
@@ -16,7 +16,14 @@ method and uses it to encode the object if found.
 """
 
 def _default(self, obj):
+  try:
     return getattr(obj.__class__, "to_json", _default.default)(obj)
+  except Exception as e:
+    if type(obj) is datetime or type(obj) is date:
+      return obj.__str__()
+
+    print(f"Unexcepted exception encountered with object of type {type(obj).__name__}. Showing traceback...")
+    raise e
 
 _default.default = JSONEncoder.default  # Save unmodified default.
 JSONEncoder.default = _default  # Replace it
@@ -61,3 +68,7 @@ def init_db():
   db.metadata.create_all(bind=engine)
   db_session.add(Models.Domaine.Domaine.create("other", "Autre"))
   db_session.commit()
+
+def init_location():
+  from models_helpers import refresh_locations_of_company
+  refresh_locations_of_company()

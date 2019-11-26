@@ -30,7 +30,13 @@ def define_formation_endpoints(app: flask.Flask):
     # TODO check level: must be in ENUM
 
     ## Search for similar formations TODO improve search
-    f = Formation.query.filter(and_(Formation.filiere.ilike(f"{branch}"), Formation.lieu.ilike(f"{location}"), Formation.niveau.ilike(f"{level}"))).all()
+    f = Formation.query.filter(
+      and_(
+        Formation.filiere.ilike(f"{branch}"), 
+        Formation.lieu.ilike(f"{location}"), 
+        Formation.niveau.ilike(f"{level}")
+      )
+    ).all()
 
     if len(f):
       return flask.jsonify(f[0])
