@@ -34,6 +34,22 @@ def define_company_endpoints(app: flask.Flask):
     if len(f):
       return flask.jsonify(f[0])
 
+    # Checks for size and status (enum voir TS interfaces.ts)
+    if type(size) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_comp_size = {"small", "big", "medium", "very_big"}
+    if size not in valid_comp_size:
+      return ERRORS.BAD_REQUEST 
+
+    # Checks for status (enum voir TS interfaces.ts)
+    if type(status) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_comp_status = {"public", "private"}
+    if status not in valid_comp_status:
+      return ERRORS.BAD_REQUEST
+
     gps_coords = get_location_of_company(city)
 
     # TODO add checks for size and status (enum voir TS interfaces.ts)

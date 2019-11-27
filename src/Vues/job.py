@@ -68,7 +68,6 @@ def define_job_endpoints(app: flask.Flask):
         print("End date error")
         return ERRORS.BAD_REQUEST
 
-
     # Teste si l'entreprise existe
     e = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
     if not e:
@@ -83,7 +82,26 @@ def define_job_endpoints(app: flask.Flask):
         return ERRORS.BAD_REQUEST
 
 
-    ## todo CHECK Level, Contract in ENUM
+    #CHECK Contract in ENUM
+    if type(contract) is not str:
+      return ERRORS.BAD_REQUEST
+    
+    #as_describe in client part interfaces.ts jobtypes
+    valid_contracts = {"cdi", "alternance", "cdd", "thèse"}
+    if contract not in valid_contracts:
+        return ERRORS.BAD_REQUEST
+
+    if type(level) is not str:
+      return ERRORS.BAD_REQUEST
+
+    #CHECK Level in ENUM
+    if type(level) is not str:
+      return ERRORS.BAD_REQUEST
+    
+    #as_describe in client part interfaces.ts joblevels
+    valid_levels = {"technicien", "ingenieur", "doctorant", "alternant"}
+    if level not in valid_levels:
+      return ERRORS.BAD_REQUEST
 
     # Create new emploi
     stu.refresh_update()
@@ -187,9 +205,34 @@ def define_job_endpoints(app: flask.Flask):
 
         job.fin = end
 
+    if 'level' in data:
+      level = data['level']
+      #CHECK Level in ENUM
+      if type(level) is not str:
+        db_session.rollback()
+        return ERRORS.BAD_REQUEST
+      
+      #as_describe in client part interfaces.ts joblevels
+      valid_levels = {"technicien", "ingenieur", "doctorant", "alternant"}
+      if level not in valid_levels:
+        db_session.rollback()
+        return ERRORS.BAD_REQUEST
+      
+      job.niveau = data['level']
+
     if 'contract' in data:
       contract = data['contract']
-      # todo verify contract else rollback & fail
+      #Check contract in ENUM
+      if type(contract) is not str:
+        db_session.rollback()
+        return ERRORS.BAD_REQUEST
+    
+      #as_describe in client part interfaces.ts jobtypes
+      valid_contracts = {"cdi", "alternance", "cdd", "thèse"}
+      if contract not in valid_contracts:
+        db_session.rollback()
+        return ERRORS.BAD_REQUEST
+
       job.contrat = contract
 
     if 'salary' in data:
@@ -203,9 +246,6 @@ def define_job_endpoints(app: flask.Flask):
           db_session.rollback()
           return ERRORS.BAD_REQUEST
 
-    if 'level' in data:
-      # todo check level
-      job.niveau = data['level']
 
     if 'contact' in data:
       if data['contact'] is None:
@@ -223,7 +263,6 @@ def define_job_endpoints(app: flask.Flask):
           db_session.rollback()
           return ERRORS.BAD_REQUEST
 
-    ## todo CHECK Level, Contract in ENUM
     stu.refresh_update()
     db_session.commit()
 

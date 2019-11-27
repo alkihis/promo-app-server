@@ -39,7 +39,7 @@ CREATE TABLE Entreprise (
   id_entreprise INTEGER PRIMARY KEY AUTOINCREMENT,
   nom TEXT NOT NULL,
   ville TEXT NOT NULL,
-  taille TEXT NOT NULL, -- ENUM: Must be "" TODO DEFINE ENUM
+  taille TEXT NOT NULL, -- ENUM: Must be "small" , "medium", "big", "very_big"
   statut TEXT NOT NULL -- ENUM: Must be "PUBLIC" or "PRIVATE"
 );
 
@@ -73,7 +73,7 @@ CREATE TABLE Emploi (
 
   debut TEXT NOT NULL, -- DATETIME | promotion si alternance
   fin TEXT, -- DATETIME or "now" or null si pas fini
-  contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance" TODO VOIR CONTRATS
+  contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance"
   salaire INTEGER, -- Peut être non précisé
   -- is_public BOOLEAN NOT NULL, -- Déplacé dans Entreprise
   niveau TEXT NOT NULL,

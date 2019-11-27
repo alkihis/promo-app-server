@@ -27,7 +27,14 @@ def define_formation_endpoints(app: flask.Flask):
 
     branch, location, level = data['name'], data['location'], data['level']
 
-    # TODO check level: must be in ENUM
+    # Check level: must be in ENUM
+    if type(level) is not str:
+      return ERRORS.BAD_REQUEST
+    
+    valid_levels = {"licence", "master", "phd", "other"}
+    if level not in valid_levels:
+      return ERRORS.BAD_REQUEST
+
 
     ## Search for similar formations TODO improve search
     f = Formation.query.filter(
