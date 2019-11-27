@@ -6,6 +6,7 @@ parser.add_argument("-p", "--port", type=int, default=3501, help="Port")
 parser.add_argument("-d", "--debug", help="Enable debug mode", action="store_true")
 parser.add_argument("-i", "--init", help="Clean and re-init SQLite", action="store_true")
 parser.add_argument("-l", "--locations", help="Refresh locations coordinates on startup", action="store_true")
+parser.add_argument("-u", "--upgrade", help="Import a old database", default="")
 parser.add_argument("--export", type=str, help="Export to file", default="")
 
 program_args = parser.parse_args()
@@ -23,6 +24,10 @@ if program_args.locations:
 if program_args.export:
   from models_helpers import global_export
   global_export(program_args.export)
+
+if program_args.upgrade:
+  from models_helpers import import_legacy_db
+  import_legacy_db(program_args.upgrade)
 
 # Import all modules
 import modules_main

@@ -1,6 +1,7 @@
 .envs/*
 db.db
-db.*.db
+*.db
 __pycache__
 .idea
 .vscode
+dump.json

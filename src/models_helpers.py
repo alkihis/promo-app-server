@@ -4,10 +4,11 @@ from Models.Domaine import Domaine
 from Models.Stage import Stage
 from Models.Emploi import Emploi
 from Models.Contact import Contact
-from helpers import get_user, is_teacher, get_request
+from helpers import get_user, is_teacher, get_request, convert_date
 from typing import Optional, List, Tuple
 import urllib.parse
 import requests
+import sqlite3
 import json
 from server import db_session
 
@@ -172,6 +173,199 @@ def global_export(filename: str):
   }
 
   json.dump(final, open(filename, "w"))
+
+
+def import_legacy_db(filename: str):
+  with sqlite3.connect(filename) as conn:
+    cur = conn.cursor()
+
+    # Initialise les domaines
+    doms = cur.execute('''
+      SELECT nomDomaine FROM Domaine
+    ''').fetchall()
+
+    for d in doms:
+      domaine = d[0]
+      orm_domaine = Domaine.create(domaine, domaine)
+      db_session.add(orm_domaine)
+
+    db_session.commit()
+
+    # Insertion des étudiants
+    students: List[Tuple[str, str, str, str]] = cur.execute('''
+      SELECT DISTINCT e.emailetu, nometu, prenometu, annee 
+      FROM Etudiant e 
+      JOIN Promo p
+      ON e.emailetu=p.emailetu
+    ''').fetchall()
+
+    emails = set()
+    for student in students:
+      email, nom, prenom, annee = student
+
+      if email in emails:
+        continue
+
+      emails.add(email)
+
+      year_out = annee.split('/')[1]
+      year_in = str(int(year_out) - 2)
+
+      e = Etudiant.create(
+        nom=nom, 
+        prenom=prenom, 
+        mail=email, 
+        annee_entree=year_in, 
+        annee_sortie=year_out, 
+        entree_en_m1=True,
+        diplome=True
+      )
+
+      db_session.add(e)
+
+    db_session.commit()
+    # Insertion des emplois
+    promo: List[Tuple[str, str, str, str, str, str, str, str, int]] = cur.execute(''' 
+      SELECT annee, emailetu, remuneration, nomorga, lieu, contrat, datedebut, statut, nomdomaine, idExp
+      FROM Promo 
+      NATURAL JOIN Embauche
+      NATURAL JOIN Organisation
+      NATURAL JOIN Experience
+      NATURAL JOIN InsertionPro
+      NATURAL JOIN ExpDom
+      NATURAL JOIN Domaine
+    ''').fetchall()
+
+    exps = set()    
+    for experience in promo:
+      annee, email, remuneration, nomorga, lieu, contrat, datedebut, statut, domaine, id_exp = experience
+
+      if id_exp in exps:
+        continue
+
+      exps.add(id_exp)
+
+      remuneration = int(remuneration)
+      if remuneration == 0:
+        remuneration = None
+      else:
+        remuneration *= 12
+
+      # Cherche si nomorga existe
+      companies: List[Entreprise] = Entreprise.query.filter_by(nom=nomorga).all()
+      if len(companies):
+        selected = companies[0]
+      else:
+        gps_coords = get_location_of_company(lieu)
+
+        selected = Entreprise.create(
+          nom=nomorga,
+          ville=lieu,
+          taille="small",
+          statut="public",
+          lat=gps_coords[0],
+          lng=gps_coords[1]
+        )
+
+        db_session.add(selected)
+        db_session.commit()
+
+      jb = Emploi.create(
+        debut=convert_date(datedebut),
+        fin=None,
+        contrat=convert_contrat(contrat),
+        niveau=convert_level(statut),
+        id_entreprise=selected.id_entreprise,
+        id_domaine=Domaine.query.filter_by(nom=domaine).one_or_none().id_domaine,
+        id_contact=None,
+        id_etu=Etudiant.query.filter_by(mail=email).one_or_none().id_etu,
+        salaire=remuneration
+      )
+
+      db_session.add(jb)
+
+    # Insertion des stages
+    stages: List[Tuple[str, str, str, str, str, str, str, str]] = cur.execute(''' 
+      SELECT emailetu, nomorga, lieu, nomdomaine, typestage, idExp, nomtut, emailtut
+      FROM Promo 
+      NATURAL JOIN Embauche
+      NATURAL JOIN Organisation
+      NATURAL JOIN Experience
+      NATURAL JOIN Stage s
+      NATURAL JOIN ExpDom
+      NATURAL JOIN Domaine
+      LEFT JOIN Dirige d
+      ON d.idS=s.idS
+      NATURAL JOIN TUTEUR
+    ''').fetchall()
+    for stage in stages:
+      emailetu, nomorga, lieu, domaine, typestage, id_exp, nom_tuteur, email_tuteur = stage
+      
+      etu: Etudiant = Etudiant.query.filter_by(mail=emailetu).one_or_none()
+
+      if not etu:
+        continue
+      # Cherche si nomorga existe
+      companies: List[Entreprise] = Entreprise.query.filter_by(nom=nomorga).all()
+      if len(companies):
+        selected = companies[0]
+      else:
+        gps_coords = get_location_of_company(lieu)
+
+        selected = Entreprise.create(
+          nom=nomorga,
+          ville=lieu,
+          taille="small",
+          statut="public",
+          lat=gps_coords[0],
+          lng=gps_coords[1]
+        )
+
+        db_session.add(selected)
+        db_session.commit()
+
+      promo = int(str(etu.annee_entree))
+      if typestage == "M1" or typestage == "volontaire":
+        promo += 1
+      else:
+        promo += 2
+
+      promo = str(promo)
+
+      tuteur = None
+      if email_tuteur:
+        tuteur: Contact = Contact.query.filter_by(mail=email_tuteur).one_or_none()
+        if not tuteur:
+          tuteur = Contact.create(
+            mail=email_tuteur,
+            nom=nom_tuteur,
+            id_entreprise=selected.id_entreprise
+          )
+
+          db_session.add(tuteur)
+          db_session.commit()
+
+      s = Stage.create(
+        promo=promo,
+        id_entreprise=selected.id_entreprise,
+        id_domaine=Domaine.query.filter_by(nom=domaine).one_or_none().id_domaine,
+        id_contact=(tuteur.id_contact if tuteur else None),
+        id_etu=etu.id_etu
+      )
+
+      db_session.add(s)
+
+    db_session.commit()
+
+
+def convert_contrat(contrat: str):
+  # TODO
+  return contrat
+
+def convert_level(level: str):
+  # TODO
+  return level
+
 
 def send_basic_mail(content: str, to: List[str], obj: str):
   # TODO interpolation de \student (par exemple)
