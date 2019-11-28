@@ -87,7 +87,7 @@ def define_job_endpoints(app: flask.Flask):
       return ERRORS.BAD_REQUEST
     
     #as_describe in client part interfaces.ts jobtypes
-    valid_contracts = {"cdi", "alternance", "cdd", "thèse"}
+    valid_contracts = {"cdi", "alternance", "cdd", "these"}
     if contract not in valid_contracts:
         return ERRORS.BAD_REQUEST
 

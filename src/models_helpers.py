@@ -50,7 +50,7 @@ def refresh_locations_of_company():
   db_session.commit()
 
 
-def get_location_of_company(loc: str, force = False) -> Tuple[Optional[str], Optional[str]]:
+def get_location_of_company(loc: str, force = False) -> Tuple[Optional[str], Optional[str], Optional[str]]:
   """
     Retourne un couple [latitude, longitude] pour une localisation donnée.
     Si aucune localisation trouvé, renvoie [None, None]
@@ -58,7 +58,7 @@ def get_location_of_company(loc: str, force = False) -> Tuple[Optional[str], Opt
   companies: List[Entreprise] = Entreprise.query.filter_by(ville=loc).all()
 
   if len(companies):
-    tuple_loc = (companies[0].lat, companies[0].lng)
+    tuple_loc = (companies[0].lat, companies[0].lng, companies[0].ville)
 
     if force and tuple_loc[0] is None:
       pass
@@ -68,19 +68,28 @@ def get_location_of_company(loc: str, force = False) -> Tuple[Optional[str], Opt
   # Download from OSM
   loc_quoted = urllib.parse.quote(loc)
   url = "https://nominatim.openstreetmap.org/search?q=" + loc_quoted + "&format=json"
+  print(f'Recherche du lieu {loc} sur OpenStreetMap')
 
   content = requests.get(url)
 
   try:
     content = content.json()
   except:
-    return (None, None)
+    return (None, None, loc)
 
   # Ne considère que la première
   if not len(content):
-    return (None, None)
+    return (None, None, loc)
 
-  return (content[0]['lat'], content[0]['lon'])
+  display_name: str = content[0]['display_name']
+  splitted = display_name.split(',')
+  town = splitted[0].strip()
+  region = splitted[1].strip();
+  land = splitted[-1].strip()
+  
+  full_name = ", ".join([town, region, land])
+
+  return (content[0]['lat'], content[0]['lon'], full_name)
 
 
 def import_students_from_file(filename: str):
@@ -199,6 +208,8 @@ def import_legacy_db(filename: str):
       ON e.emailetu=p.emailetu
     ''').fetchall()
 
+    town_to_real_loc = {}
+
     emails = set()
     for student in students:
       email, nom, prenom, annee = student
@@ -256,11 +267,16 @@ def import_legacy_db(filename: str):
       if len(companies):
         selected = companies[0]
       else:
-        gps_coords = get_location_of_company(lieu)
+        original_lieu = lieu
+        if lieu in town_to_real_loc:
+          lieu = town_to_real_loc[lieu]
+        
+        gps_coords = get_location_of_company(lieu, force=True)
+        town_to_real_loc[original_lieu] = gps_coords[2]
 
         selected = Entreprise.create(
           nom=nomorga,
-          ville=lieu,
+          ville=gps_coords[2],
           taille="small",
           statut="public",
           lat=gps_coords[0],
@@ -310,11 +326,16 @@ def import_legacy_db(filename: str):
       if len(companies):
         selected = companies[0]
       else:
-        gps_coords = get_location_of_company(lieu)
+        original_lieu = lieu
+        if lieu in town_to_real_loc:
+          lieu = town_to_real_loc[lieu]
+
+        gps_coords = get_location_of_company(lieu, force=True)
+        town_to_real_loc[original_lieu] = gps_coords[2]
 
         selected = Entreprise.create(
           nom=nomorga,
-          ville=lieu,
+          ville=gps_coords[2],
           taille="small",
           statut="public",
           lat=gps_coords[0],
@@ -359,12 +380,22 @@ def import_legacy_db(filename: str):
 
 
 def convert_contrat(contrat: str):
-  # TODO
-  return contrat
+  old_to_new = {
+    'doctorat': 'these',
+    'alternance': 'alternance',
+    'CDI': 'cdi',
+    'CDD': 'cdd',
+  }
+  return old_to_new[contrat]
+
 
 def convert_level(level: str):
-  # TODO
-  return level
+  old_to_new = {
+    'Ingénieur': 'ingenieur',
+    'Alternant': 'alternant',
+    'Doctorant': 'doctorant',
+  }
+  return old_to_new[level]
 
 
 def send_basic_mail(content: str, to: List[str], obj: str):

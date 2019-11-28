@@ -33,8 +33,6 @@ def convert_date(date: str) -> datetime.date:
   if len(date.split('/')) == 3:
     j, m, y = date.split('/')
     return datetime.date(int(y), int(m), int(j))
-  print("Converting")
-  print(date)
   
   return timestring.Date(date).date.date()
 
