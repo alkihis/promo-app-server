@@ -4,7 +4,7 @@ from Models.Domaine import Domaine
 from Models.Stage import Stage
 from Models.Emploi import Emploi
 from Models.Contact import Contact
-from helpers import get_user, is_teacher, get_request, convert_date, create_token_for
+from helpers import get_user, is_teacher, get_request, convert_date, create_token_for, generate_login_link_for
 from typing import Optional, List, Tuple
 from errors import ERRORS
 import urllib.parse
@@ -14,12 +14,16 @@ import requests
 import sqlite3
 import json
 from server import db_session
+from flask import render_template, render_template_string
+from gmail import GMAIL_SERVICE, send_message, create_message, MASTER_ADDRESS
+from const import SITE_URL, STATIC_SITE_URL
 
 def get_etu_object_for_logged_user() -> Optional[Etudiant]:
   user = get_user()
 
   if user and user.id_etu:
     return Etudiant.query.filter_by(id_etu=user.id_etu).one_or_none()
+
 
 def get_student_or_none() -> Optional[Etudiant]:
   r = get_request()
@@ -403,11 +407,41 @@ def convert_level(level: str):
 
 def send_basic_mail(content: str, to: List[str], obj: str):
   # TODO interpolation de \student (par exemple)
+  # Escape HTML
+  content = re.sub("&", "&amp;", content)
+  content = re.sub("<", "&lt;", content)
+  content = re.sub(">", "&gt;", content)
+
+  # Replacements HTML globaux
+  content = re.sub(r'{{ *new_line *}}', "<br />", content)
+  content = re.sub(r'{{ *title (.+?) *}}', r'<h1>\1</h1>', content)
+  content = re.sub(r'{{ *subtitle (.+?) *}}', r'<h3>\1</h3>', content)
+  content = re.sub(r'{{ *link (.+?) +\"(.+?)\" *}}', r'<a target="_blank" href="\1">\2</a>', content)
 
   for student in to:
     # todo send the mail
-    pass
+    s: Etudiant = Etudiant.query.filter_by(mail=student).one_or_none()
 
+    if not s:
+      continue
+    
+    text = content
+
+    # Student data
+    text = re.sub(r'{{ *studentName *}}', s.nom, text)
+    text = re.sub(r'{{ *studentFirstName *}}', s.prenom, text)
+    text = re.sub(r'{{ *studentMail *}}', s.mail, text)
+    text = re.sub(r'{{ *student *}}', str(s.prenom) + " " + str(s.nom), text)
+
+    # Student-specific link
+    text = re.sub(r'{{ *auth_link \"(.+?)\" *}}', r'<a target="_blank" href="' + generate_login_link_for(s.id_etu) + r'">\1</a>', text)
+
+    msg_content = render_template('mail.html', content=text, subject=obj, site_url=SITE_URL, static_site_url=STATIC_SITE_URL)
+
+    # send the mail
+    # send_message(GMAIL_SERVICE, "me", create_message(MASTER_ADDRESS, s.mail, obj, msg_content))
+    # DEBUG TODO remove
+    send_message(GMAIL_SERVICE, "me", create_message(MASTER_ADDRESS, 'tulouca@gmail.com', obj, msg_content))
 
 def create_a_student(data):
   # Si toutes ces clés ne sont pas présentes dans le dict

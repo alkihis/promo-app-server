@@ -1,10 +1,11 @@
-from flask import Flask
+from flask import Flask, request
 from const import DATABASE
 from sqlalchemy import create_engine, Integer, String, Boolean, Column, Date, ForeignKey
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import date, datetime
 from json import JSONEncoder
+from errors import ERRORS
 import os
 
 ## File for creating/enabling connection to SQLite database, define ORM models, affect it to Flask app.
@@ -47,9 +48,19 @@ import Models.Stage
 import Models.Token
 import Models.Domaine
 import Models.AskCreation
+from flask_bcrypt import Bcrypt
 
 ### Create Flask Server
-app = Flask("promo-app-server")
+app = Flask("promo-app-server", static_url_path="", static_folder="./static")
+bcrypt = Bcrypt(app)
+
+@app.errorhandler(404)
+def normal_404(err):
+  if request.path.startswith('/api'):
+    return ERRORS.PAGE_NOT_FOUND
+  
+  # TODO Return the index.html from React
+  return "", 404
 
 # Database cleaner
 def clean_db():

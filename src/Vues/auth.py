@@ -1,32 +1,42 @@
 import flask
-from helpers import get_request, is_teacher, get_user
+from helpers import get_request, is_teacher, get_user, get_teacher_password_hash, get_or_create_token_for
 from Models.Token import Token
+from Models.Etudiant import Etudiant
 import uuid
-from server import db_session
+from server import db_session, bcrypt
 from errors import ERRORS
 from flask_login import login_required
 
-PASSWORD_FOR_TEACHER = "DEFINED_PASSWORD"
-
 def define_auth_routes(app: flask.Flask):
+  @app.route('/token/recover')
+  def recover_token():
+    r = get_request()
+
+    if not 'email' in r.args:
+      return ERRORS.BAD_REQUEST
+
+    # test si un étudiant avec cet email existe
+    e: Etudiant = Etudiant.query.filter_by(mail=r.args['email']).one_or_none()
+
+    if not e:
+      # Ne génère pas d'erreur
+      return ""
+
+    # TODO send mail with affialted token
+    t = get_or_create_token_for(e.id_etu)
+
+    return ""
+
+
   ## For teacher
   @app.route('/auth/login', methods=['POST'])
   def login_for_teacher():
     r = get_request()
 
     # TODO make verif for password
-    if r.is_json and 'password' in r.json and r.json['password'] == PASSWORD_FOR_TEACHER:
+    if r.is_json and 'password' in r.json and bcrypt.check_password_hash(get_teacher_password_hash(), r.json['password']):
       # Cherche si un token existe
-      t: Token = Token.query.filter_by(teacher=True).one_or_none()
-
-      if not t:
-        ## Create token
-        new_token = str(uuid.uuid4())
-
-        # Register token
-        t = Token.create(token=new_token, teacher=True)
-        db_session.add(t)
-        db_session.commit()
+      t: Token = get_or_create_token_for(None, True)
 
       return flask.jsonify({'token': t.token})
     else:

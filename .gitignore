@@ -3,6 +3,9 @@
 db.db
 *.db
 __pycache__
+settings.json
+credentials.json
 .idea
 .vscode
 dump.json
+*.pickle
