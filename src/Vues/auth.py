@@ -6,6 +6,7 @@ import uuid
 from server import db_session, bcrypt
 from errors import ERRORS
 from flask_login import login_required
+from models_helpers import send_welcome_mail
 
 def define_auth_routes(app: flask.Flask):
   @app.route('/token/recover')
@@ -22,8 +23,7 @@ def define_auth_routes(app: flask.Flask):
       # Ne génère pas d'erreur
       return ""
 
-    # TODO send mail with affialted token
-    t = get_or_create_token_for(e.id_etu)
+    send_welcome_mail(e.id_etu)
 
     return ""
 

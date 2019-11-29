@@ -1,6 +1,6 @@
 import flask
 from helpers import get_request, is_teacher, generate_random_token
-from models_helpers import create_a_student
+from models_helpers import create_a_student, send_invite_create_profile_mail
 from Models.AskCreation import AskCreation
 from Models.Etudiant import Etudiant
 import uuid
@@ -25,19 +25,16 @@ def define_ask_creation_routes(app: flask.Blueprint):
     if 'mail' not in data:
       return ERRORS.BAD_REQUEST
 
-    # TODO validate mail
+    e = Etudiant.query.filter_by(mail=data['mail']).one_or_none()
+
+    if e:
+      # TODO better error
+      return ERRORS.BAD_REQUEST
+
     mail = data['mail']
 
-    # generate a token
-    token = generate_random_token()
-
-    a = AskCreation.create(token, mail)
-
-    # Send the mail automatically
-    # TODO send the mail !
-
-    db_session.add(a)
-    db_session.commit()
+    # Send the mail
+    send_invite_create_profile_mail(mail)
 
     return ""
 

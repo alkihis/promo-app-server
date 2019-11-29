@@ -4,7 +4,8 @@ from Models.Domaine import Domaine
 from Models.Stage import Stage
 from Models.Emploi import Emploi
 from Models.Contact import Contact
-from helpers import get_user, is_teacher, get_request, convert_date, create_token_for, generate_login_link_for
+from Models.AskCreation import AskCreation
+from helpers import get_user, is_teacher, get_request, convert_date, create_token_for, generate_login_link_for, generate_random_token
 from typing import Optional, List, Tuple
 from errors import ERRORS
 import urllib.parse
@@ -405,8 +406,148 @@ def convert_level(level: str):
   return old_to_new[level]
 
 
-def send_basic_mail(content: str, to: List[str], obj: str):
-  # TODO interpolation de \student (par exemple)
+def create_ask_creation_token(mail: str, matches):
+  ## Check if AskCreation already sended
+  AskCreation.query.filter_by(mail=mail).delete()
+
+  token = generate_random_token()
+
+  a = AskCreation.create(token, mail)
+  db_session.add(a)
+  db_session.commit()
+
+  return '<a href="' + SITE_URL + '/profile_create?token=' + str(a.token) + f'" target="_blank">{matches.group(1)}</a>'
+
+
+def send_invite_create_profile_mail(mail: str):
+  """
+    Envoie un e-mail à un étudiant lui invitant à créer son profil
+    sur l'application, via le lien contenu dans le mail.
+
+    mail: Email auquel envoyer la demande de création
+  """
+  s: Etudiant = Etudiant.query.filter_by(mail=mail).one_or_none()
+
+  if s:  
+    # L'étudiant a déjà créé son profil, invitation à y aller plutôt
+    return send_welcome_mail(s.id_etu)
+
+  content = """
+    {{ title Création de votre profil }}
+    {{ subtitle Application de suivi des promotions du Master Bio-Informatique }}
+
+    {{ strong promos@bioinfo }} est un service web vous permettant de renseigner des informations
+    en lien avec votre master effectué à Lyon.
+
+    {{ new_line }}
+
+    En saisissant des données en rapport avec vos stages, contacts, lieux d'embauche et formations précédentes,
+    vous aidez les promotions plus récentes grâce à vos données et participez à construire des statistiques sur
+    les débouchés de la formation.
+
+    {{ new_line }}
+
+    {{ italic La majorité des données saisies sont uniquement visibles par les enseignants. }}
+
+    {{ +subtitle }}
+      {{ +center }}
+        {{ profile_creation_link "Cliquez ici pour créer votre profil sur le service" }}
+      {{ -center }}
+    {{ -subtitle }}
+
+    {{ subtitle Accès au site }}  
+
+    {{ strong Vous recevez cet e-mail car un enseignant souhaite que vous créeiez et complétiez votre profil. }}
+
+    {{ new_line }}
+
+    La création de votre profil sur l'application vous donnera accès à un tableau de bord, où vous serez en mesure
+    de saisir vos informations.
+
+    {{ new_line }}
+    {{ new_line }}
+
+    {{ strong Merci pour votre participation ! }}
+  """
+
+  send_basic_mail(content, [mail], "Suivi des promotions du Master Bio-Informatique Lyon")
+
+
+def send_welcome_mail(student: int):
+  """
+    Envoie un e-mail à un étudiant lui invitant à se connecter 
+    sur le site via le lien contenu dans le mail.
+
+    student: student ID
+  """
+  s: Etudiant = Etudiant.query.filter_by(id_etu=student).one_or_none()
+
+  if not s:
+    raise ValueError("Student not found")
+
+  content = """
+    {{ title Connexion à votre compte }}
+    {{ subtitle Application de suivi des promotions du Master Bio-Informatique }}
+
+    {{ strong promos@bioinfo }} est un service web vous permettant de renseigner des informations
+    en lien avec votre master effectué à Lyon.
+
+    {{ new_line }}
+
+    En saisissant des données en rapport avec vos stages, contacts, lieux d'embauche et formations précédentes,
+    vous aidez les promotions plus récentes grâce à vos données et participez à construire des statistiques sur
+    les débouchés de la formation.
+
+    {{ new_line }}
+
+    {{ italic La majorité des données saisies sont uniquement visibles par les enseignants. }}
+
+    {{ +subtitle }}
+      {{ +center }}
+        {{ auth_link "Cliquez ici pour vous connecter automatiquement" }}
+      {{ -center }}
+    {{ -subtitle }}
+
+    {{ subtitle Accès au site }}  
+
+    {{ +strong }}{{ student }}{{ -strong }}, pour vous connecter, suivez le lien de connexion ci-dessus.
+    Il vous amène directement sur votre tableau de bord, où vous serez en mesure d'ajouter et
+    actualiser toutes vos informations.
+
+    {{ new_line }}
+    {{ new_line }}
+
+    {{ strong Merci pour votre participation ! }}
+  """
+
+  send_basic_mail(content, [s.mail], "Connexion à l'application de suivi des promotions")
+
+
+def preview_template(student: Etudiant, content: str, obj: str) -> str:
+  """
+    Prévisualise le résultat d'un template mail pour l'étudiant donné.
+
+    student: Object Etudiant
+  """
+
+  return parse_mail_template(content, [student.mail], obj, as_message=False)[0]
+
+
+def parse_mail_template(content: str, to: List[str], obj: str, as_message = True):
+  """
+    Parse et rend les mails pour les étudiants donnés.
+
+    content: Template string
+
+    to: Liste d'emails d'étudiants
+
+    obj: Objet du message
+
+    as_message: True si le message sera rendu avec create_message().
+    Sinon, seule la template string modifiée sera retournée.
+
+    @returns Liste de messages/template strings modifiées
+  """
   # Escape HTML
   content = re.sub("&", "&amp;", content)
   content = re.sub("<", "&lt;", content)
@@ -414,36 +555,64 @@ def send_basic_mail(content: str, to: List[str], obj: str):
 
   # Replacements HTML globaux
   content = re.sub(r'{{ *new_line *}}', "<br />", content)
-  content = re.sub(r'{{ *title (.+?) *}}', r'<h1>\1</h1>', content)
-  content = re.sub(r'{{ *subtitle (.+?) *}}', r'<h3>\1</h3>', content)
-  content = re.sub(r'{{ *link (.+?) +\"(.+?)\" *}}', r'<a target="_blank" href="\1">\2</a>', content)
+
+  content = re.sub(r'{{ *title (.+?) *}}', r'<h1>\1</h1>', content, flags=re.S)
+  content = re.sub(r'{{ *\+title *}}(.+?){{ *\-title *}}', r'<h1>\1</h1>', content, flags=re.S)
+
+  content = re.sub(r'{{ *subtitle (.+?) *}}', r'<h3>\1</h3>', content, flags=re.S)
+  content = re.sub(r'{{ *\+subtitle *}}(.+?){{ *\-subtitle *}}', r'<h3>\1</h3>', content, flags=re.S)
+  
+  content = re.sub(r'{{ *\+center *}}(.+?){{ *\-center *}}', r'<center>\1</center>', content, flags=re.S)
+
+  content = re.sub(r'{{ *strong (.+?) *}}', r'<strong>\1</strong>', content, flags=re.S)
+  content = re.sub(r'{{ *\+strong *}}(.+?){{ *\-strong *}}', r'<strong>\1</strong>', content, flags=re.S)
+
+  content = re.sub(r'{{ *italic (.+?) *}}', r'<em>\1</em>', content, flags=re.S)
+  content = re.sub(r'{{ *\+italic *}}(.+?){{ *\-italic *}}', r'<em>\1</em>', content, flags=re.S)
+
+  content = re.sub(r'{{ *link (.+?) +\"(.+?)\" *}}', r'<a target="_blank" href="\1">\2</a>', content, flags=re.S)
+
+  templates = []
 
   for student in to:
-    # todo send the mail
     s: Etudiant = Etudiant.query.filter_by(mail=student).one_or_none()
-
-    if not s:
-      continue
     
     text = content
 
-    # Student data
-    text = re.sub(r'{{ *studentName *}}', s.nom, text)
-    text = re.sub(r'{{ *studentFirstName *}}', s.prenom, text)
-    text = re.sub(r'{{ *studentMail *}}', s.mail, text)
-    text = re.sub(r'{{ *student *}}', str(s.prenom) + " " + str(s.nom), text)
+    text = re.sub(r'{{ *profile_creation_link +\"(.+?)\" *}}', lambda matches: create_ask_creation_token(student, matches), text, flags=re.S)
 
-    # Student-specific link
-    text = re.sub(r'{{ *auth_link \"(.+?)\" *}}', r'<a target="_blank" href="' + generate_login_link_for(s.id_etu) + r'">\1</a>', text)
+    # Student data
+    if s:
+      text = re.sub(r'{{ *studentName *}}', s.nom, text)
+      text = re.sub(r'{{ *studentFirstName *}}', s.prenom, text)
+      text = re.sub(r'{{ *studentMail *}}', s.mail, text)
+      text = re.sub(r'{{ *student *}}', str(s.prenom) + " " + str(s.nom), text)
+
+      # Student-specific link
+      text = re.sub(r'{{ *auth_link +\"(.+?)\" *}}', r'<a target="_blank" href="' + generate_login_link_for(s.id_etu) + r'">\1</a>', text, flags=re.S)
 
     msg_content = render_template('mail.html', content=text, subject=obj, site_url=SITE_URL, static_site_url=STATIC_SITE_URL)
 
-    # send the mail
-    # send_message(GMAIL_SERVICE, "me", create_message(MASTER_ADDRESS, s.mail, obj, msg_content))
-    # DEBUG TODO remove
-    send_message(GMAIL_SERVICE, "me", create_message(MASTER_ADDRESS, 'tulouca@gmail.com', obj, msg_content))
+    # Create the mail
+    if as_message:
+      # create_message(MASTER_ADDRESS, student, obj, msg_content)
+      # DEBUG TODO remove
+      templates.append(create_message(MASTER_ADDRESS, 'tulouca@gmail.com', obj, msg_content))
+    else:
+      templates.append(msg_content)
+  
+  return templates
 
-def create_a_student(data):
+
+def send_basic_mail(content: str, to: List[str], obj: str):
+  templates = parse_mail_template(content, to, obj, as_message=True)
+
+  for t in templates:
+    # Send the mails
+    send_message(GMAIL_SERVICE, "me", t)
+
+
+def create_a_student(data, with_mail = True):
   # Si toutes ces clés ne sont pas présentes dans le dict
   if not {'first_name', 'last_name', 'email', 'year_in', 'entered_in', 'graduated'} <= set(data):
     return ERRORS.MISSING_PARAMETERS
@@ -479,8 +648,9 @@ def create_a_student(data):
   db_session.add(etu)
   db_session.commit()
 
-  # Create a token automatically
-  create_token_for(etu.id_etu, teacher=False)
+  # Create a token automatically and send the welcome e-mail
+  if with_mail:
+    send_welcome_mail(etu.id_etu)
 
   return etu
 
