@@ -4,9 +4,12 @@ from Models.Domaine import Domaine
 from Models.Stage import Stage
 from Models.Emploi import Emploi
 from Models.Contact import Contact
-from helpers import get_user, is_teacher, get_request, convert_date
+from helpers import get_user, is_teacher, get_request, convert_date, create_token_for
 from typing import Optional, List, Tuple
+from errors import ERRORS
 import urllib.parse
+import re
+import datetime
 import requests
 import sqlite3
 import json
@@ -404,4 +407,46 @@ def send_basic_mail(content: str, to: List[str], obj: str):
   for student in to:
     # todo send the mail
     pass
+
+
+def create_a_student(data):
+  # Si toutes ces clés ne sont pas présentes dans le dict
+  if not {'first_name', 'last_name', 'email', 'year_in', 'entered_in', 'graduated'} <= set(data):
+    return ERRORS.MISSING_PARAMETERS
+
+  first_name, last_name, email = data['first_name'], data['last_name'], data['email']
+  year_in, entree, diplome = data['year_in'], data['entered_in'], data['graduated']
+
+  # Do not forget to change datestring to date object !
+  # birthdate = convert_date(birthdate)
+
+  student_check = Etudiant.query.filter_by(mail=email).all()
+  if len(student_check):
+    return ERRORS.CONFLICT
+
+  email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
+  if not re.match(email_catch, email):
+    return ERRORS.BAD_REQUEST
+
+  current_date = datetime.datetime.now().date().year
+
+  if type(diplome) is not bool:
+    return ERRORS.BAD_REQUEST
+
+  try:
+    if int(year_in) > current_date or int(year_in) < 2015:
+      return ERRORS.BAD_REQUEST
+  except:
+    return ERRORS.BAD_REQUEST
+  
+  # Create student
+  etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, annee_entree=year_in, entree_en_m1=entree == "M1", diplome=diplome)
+
+  db_session.add(etu)
+  db_session.commit()
+
+  # Create a token automatically
+  create_token_for(etu.id_etu, teacher=False)
+
+  return etu
 

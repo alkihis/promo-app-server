@@ -20,9 +20,12 @@ def is_teacher() -> bool:
 def convert_datetime(date: str) -> datetime.datetime:
   return timestring.Date(date).date
 
+def generate_random_token():
+  return str(uuid.uuid4())
+
 def create_token_for(id_etu: int, teacher = False):
   ## Crée un token pour l'étudiant
-  new_token = str(uuid.uuid4())
+  new_token = generate_random_token()
   t = Models.Token.Token.create(token=new_token, teacher=teacher, id_etu=id_etu)
   db_session.add(t)
   db_session.commit()

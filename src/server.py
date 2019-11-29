@@ -46,6 +46,7 @@ import Models.Formation
 import Models.Stage
 import Models.Token
 import Models.Domaine
+import Models.AskCreation
 
 ### Create Flask Server
 app = Flask("promo-app-server")

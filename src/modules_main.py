@@ -52,6 +52,9 @@ define_job_endpoints(bp)
 from Vues.teacher import define_teacher_endpoints
 define_teacher_endpoints(bp)
 
+from Vues.ask_creation import define_ask_creation_routes
+define_ask_creation_routes(bp)
+
 # This should be after all bp definitions !
 app.register_blueprint(bp, url_prefix='/api')
 
