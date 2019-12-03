@@ -627,6 +627,13 @@ def create_a_student(data, with_mail = True):
   if len(student_check):
     return ERRORS.CONFLICT
 
+  special_check = r"^[\w_ -]+$" 
+  if not re.match(special_check,first_name):
+    return ERRORS.BAD_REQUEST
+
+  if not re.match(special_check,last_name):
+    return ERRORS.BAD_REQUEST
+
   email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
   if not re.match(email_catch, email):
     return ERRORS.BAD_REQUEST
@@ -641,6 +648,7 @@ def create_a_student(data, with_mail = True):
       return ERRORS.BAD_REQUEST
   except:
     return ERRORS.BAD_REQUEST
+
   
   # Create student
   etu = Etudiant.create(nom=last_name, prenom=first_name, mail=email, annee_entree=year_in, entree_en_m1=entree == "M1", diplome=diplome)
