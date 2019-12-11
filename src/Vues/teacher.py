@@ -14,10 +14,10 @@ from datetime import date
 
 def define_teacher_endpoints(app: flask.Blueprint):
   @app.route('/teacher/stats')
-  # @login_required
+  @login_required
   def main_stats():
-    # if not is_teacher():
-      # return ERRORS.INVALID_CREDENTIALS
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
 
     # Statistiques de base 
     # (deux graphiques: 

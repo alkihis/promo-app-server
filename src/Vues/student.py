@@ -4,7 +4,7 @@ from Models.Formation import Formation
 from Models.Token import Token
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
-from models_helpers import get_student_or_none, send_basic_mail, create_a_student
+from models_helpers import get_student_or_none, send_basic_mail, create_a_student, send_welcome_mail, send_ask_relogin_mail
 from errors import ERRORS
 from server import db_session, engine
 from sqlalchemy import and_, or_
@@ -340,21 +340,33 @@ def student_routes(app: flask.Flask):
 
     email = r.args['email']
 
-    tk: Token = Token.query.join(Etudiant).filter_by(mail=email).all()
-
-    if len(tk):
-      ## TODO send email with token to student
-      # URL: http://<site-url>/login?token={tk.token}
-      pass
-
-    # Generate a token
     st: Etudiant = Etudiant.query.filter_by(mail=email).one_or_none()
 
     if not st:
       return ERRORS.RESOURCE_NOT_FOUND
 
-    tk = create_token_for(st.id_etu, False)
+    send_welcome_mail(st.id_etu)
+    return ""
 
-    ## TODO send email with token to student
-    # URL: http://<site-url>/login?token={tk.token}
+  @app.route('/student/ask_refresh', methods=["POST"])
+  @login_required
+  def ask_refresh():
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
 
+    r = get_request()
+    data = r.json
+
+    if not 'ids' in data or type(data['ids']) is not list:
+      return ERRORS.BAD_REQUEST
+
+
+    for id_etu in data['ids']:
+      st: Etudiant = Etudiant.query.filter_by(id_etu=id_etu).one_or_none()
+
+      if not st:
+        return ERRORS.RESOURCE_NOT_FOUND
+
+      send_ask_relogin_mail(st.id_etu)
+
+    return ""

@@ -478,6 +478,56 @@ def send_invite_create_profile_mail(mail: str):
   send_basic_mail(content, [mail], "Suivi des promotions du Master Bio-Informatique Lyon")
 
 
+def send_ask_relogin_mail(student: int):
+  """
+    Envoie un e-mail à un étudiant lui invitant à se connecter 
+    sur le site pour actualiser son profil via le lien contenu dans le mail.
+
+    student: student ID
+  """
+  s: Etudiant = Etudiant.query.filter_by(id_etu=student).one_or_none()
+
+  if not s:
+    raise ValueError("Student not found")
+
+  content = """
+    {{ title Actualisation de votre profil }}
+    {{ subtitle Application de suivi des promotions du Master Bio-Informatique }}
+
+    Bonjour {{ +strong }}{{ studentFirstName }}{{ -strong }}, 
+    {{ strong promos@bioinfo }} est un service web vous permettant de renseigner des informations
+    en lien avec votre master effectué à Lyon.
+
+    {{ new_line }}
+
+    Cela fait un certain temps que l'on ne vous a pas vu sur la plateforme.
+    Et si vous passiez nous dire ce que vous devenez ?
+
+    {{ new_line }}
+
+    {{ italic Vos informations nous aident à proposer une formation plus pertinente. }}
+
+    {{ +subtitle }}
+      {{ +center }}
+        {{ auth_link "Cliquez ici pour vous connecter à votre profil" }}
+      {{ -center }}
+    {{ -subtitle }}
+
+    {{ subtitle Accès au site }}  
+
+    {{ +strong }}{{ student }}{{ -strong }}, pour vous connecter, suivez le lien de connexion ci-dessus.
+    Il vous amène directement sur votre tableau de bord, où vous serez en mesure d'ajouter et
+    actualiser toutes vos informations.
+
+    {{ new_line }}
+    {{ new_line }}
+
+    {{ strong Merci pour votre participation ! }}
+  """
+
+  send_basic_mail(content, [s.mail], "Actualisation de votre profil - Suivi des promotions du Master Bio-Informatique")
+
+
 def send_welcome_mail(student: int):
   """
     Envoie un e-mail à un étudiant lui invitant à se connecter 
