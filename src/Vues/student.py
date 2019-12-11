@@ -107,16 +107,15 @@ def student_routes(app: flask.Flask):
     data = r.json
 
     if 'first_name' in data:
-      # TODO Check validity
-      special_check = r"^[A-Za-z0-9-_ ]+$" 
-      if not re.match(special_check, data['first_name']):
+      special_check = r"^[\w_ -]+$" 
+      if not re.match(special_check,data['first_name']):
         return ERRORS.BAD_REQUEST
 
       student.prenom = data['first_name']
 
     if 'last_name' in data:
       # TODO Check validity
-      special_check = r"^[A-Za-z0-9-_ ]+$" 
+      special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['last_name']):
         return ERRORS.BAD_REQUEST
 
@@ -165,7 +164,6 @@ def student_routes(app: flask.Flask):
       student.annee_sortie = data['year_out']
 
     if 'email' in data:
-      # TODO Check validity
       email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
       if not re.match(email_catch, data['email']):
         return ERRORS.BAD_REQUEST
@@ -213,8 +211,6 @@ def student_routes(app: flask.Flask):
 
     # Save changes
     db_session.commit()
-
-    print(student.to_json())
     
     return flask.jsonify(student)
 
