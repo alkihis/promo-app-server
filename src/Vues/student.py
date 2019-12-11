@@ -83,6 +83,7 @@ def student_routes(app: flask.Flask):
 
     # Check presence of required arguments
     # Required are first_name, last_name, email, year_in, birthdate 
+    #### TODO check data of student !
     data = r.json
 
     etu = create_a_student(data)
@@ -106,7 +107,6 @@ def student_routes(app: flask.Flask):
     data = r.json
 
     if 'first_name' in data:
-      # TODO Check validity
       special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['first_name']):
         return ERRORS.BAD_REQUEST
