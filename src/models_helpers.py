@@ -111,10 +111,14 @@ def import_students_from_file(filename: str):
     i = 0
     for line in fp:
       i += 1
+
+      if not line.strip():
+        continue
+
       parts: List[str] = line.strip().split('\t')
 
       try:
-        first_name, last_name, email, graduation_year, is_graduated = parts
+        first_name, last_name, email, graduation_year, is_in_m1, is_graduated = parts
       except:
         print(f"Invalid line {i}: Incorrect number of elements in line.")
         continue
@@ -140,6 +144,7 @@ def import_students_from_file(filename: str):
         mail=email, 
         annee_entree=year_in, 
         annee_sortie=graduation_year,
+        entree_en_m1=(is_in_m1 == "1"),
         diplome=(is_graduated == "1")
       )  
 
