@@ -620,8 +620,7 @@ def create_a_student(data, with_mail = True):
   first_name, last_name, email = data['first_name'], data['last_name'], data['email']
   year_in, entree, diplome = data['year_in'], data['entered_in'], data['graduated']
 
-  # Do not forget to change datestring to date object !
-  # birthdate = convert_date(birthdate)
+  #### TODO check data of student !
 
   student_check = Etudiant.query.filter_by(mail=email).all()
   if len(student_check):
