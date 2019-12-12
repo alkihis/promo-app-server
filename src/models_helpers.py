@@ -4,18 +4,22 @@ from Models.Domaine import Domaine
 from Models.Stage import Stage
 from Models.Emploi import Emploi
 from Models.Contact import Contact
+from Models.Formation import Formation
 from Models.AskCreation import AskCreation
 from helpers import get_user, is_teacher, get_request, convert_date, create_token_for, generate_login_link_for, generate_random_token
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Set
 from errors import ERRORS
 import urllib.parse
 import re
 import datetime
 import requests
 import sqlite3
+import uuid
+import zipfile
 import json
+from io import BytesIO
 from server import db_session
-from flask import render_template, render_template_string
+from flask import render_template, render_template_string, send_file
 from gmail import GMAIL_SERVICE, send_message, create_message, MASTER_ADDRESS
 from const import SITE_URL, STATIC_SITE_URL
 
@@ -707,4 +711,148 @@ def create_a_student(data, with_mail = True):
     send_welcome_mail(etu.id_etu)
 
   return etu
+
+
+def export_all_data_in_csv(stu_ids: List[int] = None):
+  if stu_ids:
+    students: List[Etudiant] = Etudiant.query.filter(Etudiant.id_etu.in_(stu_ids)).all()
+  else: 
+    students: List[Etudiant] = Etudiant.query.all()
+
+  # Référence toutes les entreprises, stages et emplois
+  entreprises: Set[Entreprise] = set()
+  emplois: Set[Emploi] = set()
+  stages: Set[Stage] = set()
+  contacts: Set[Contact] = set()
+  formations: Set[Formation] = set()
+
+  for student in students:
+    if student.cursus_obj:
+      formations.add(student.cursus_obj)
+    if student.reorientation_obj:
+      formations.add(student.reorientation_obj)
+
+    e_all: List[Emploi] = Emploi.query.filter_by(id_etu=student.id_etu).all()
+    for e in e_all:
+      emplois.add(e)
+
+      contact = e.contact
+      entreprise = e.entreprise
+
+      entreprises.add(entreprise)
+      if contact:
+        contacts.add(contact)
+
+    s_all: List[Stage] = Stage.query.filter_by(id_etu=student.id_etu).all()
+    for s in s_all:
+      stages.add(s)
+
+      contact = s.contact
+      entreprise = s.entreprise
+
+      entreprises.add(entreprise)
+      if contact:
+        contacts.add(contact)
+
+  # On a tous les stages, emplois, toutes les entreprises et tous les contacts
+  # Crée le csv
+  zip_io = BytesIO()
+  zip_file = zipfile.ZipFile(zip_io, 'w', compression=zipfile.ZIP_DEFLATED)
+
+  escape = lambda s: str(s).replace('\t', ' ')
+
+  tmp_csv = "ID Étudiant\tNom\tPrénom\tE-mail\tAnnée d'entrée\tAnnée de sortie\tEst diplômé\tEst entré en M1\tID formation antérieure\tID formation postérieure\n"
+
+  for student in students:
+    annee_sortie = student.annee_sortie
+    if not annee_sortie and student.diplome:
+      if student.entree_en_m1:
+        annee_sortie = student.annee_entree + 2
+      else:
+        annee_sortie = student.annee_entree + 1
+
+    tmp_csv += "\t".join(map(escape, [
+      student.id_etu,
+      student.nom,
+      student.prenom,
+      student.mail,
+      student.annee_entree,
+      annee_sortie if annee_sortie else "-",
+      "1" if student.diplome else "0",
+      "1" if student.entree_en_m1 else "0",
+      student.cursus_anterieur if student.cursus_anterieur else "-",
+      student.reorientation if student.reorientation else "-",
+    ])) + "\n"
+
+  zip_file.writestr('etudiants.csv', tmp_csv)
+
+  tmp_csv = "ID Formation\tFilière\tLieu\tNiveau\n"
+  for formation in formations:
+    tmp_csv += "\t".join(map(escape, [
+      formation.id_form,
+      formation.filiere,
+      formation.lieu,
+      formation.niveau,
+    ])) + "\n"
+
+  zip_file.writestr('formations.csv', tmp_csv)
+
+  tmp_csv = "ID Entreprise\tNom\tStatut\tTaille\tLatitude\tLongitude\n"
+  for entreprise in entreprises:
+    tmp_csv += "\t".join(map(escape, [
+      entreprise.id_entreprise,
+      entreprise.nom,
+      entreprise.statut,
+      entreprise.taille,
+      entreprise.lat,
+      entreprise.lng,
+    ])) + "\n"
+
+  zip_file.writestr('entreprises.csv', tmp_csv)
+
+  tmp_csv = "ID Emploi\tID Étudiant\tID Entreprise\tType contrat\tDomaine\tNiveau\tDébut\tFin\tSalaire\tID Contact\n"
+  for emploi in emplois:
+    tmp_csv += "\t".join(map(escape, [
+      emploi.id_emploi,
+      emploi.id_etu,
+      emploi.id_entreprise,
+      emploi.contrat,
+      emploi.domaine.domaine,
+      emploi.niveau,
+      emploi.debut,
+      emploi.fin if emploi.fin else '-',
+      emploi.salaire if emploi.salaire else '-',
+      emploi.id_contact if emploi.id_contact else '-'
+    ])) + "\n"
+
+  zip_file.writestr('emplois.csv', tmp_csv)
+
+  tmp_csv = "ID Stage\tID Étudiant\tID Entreprise\tPromotion\tDomaine\tID Contact\n"
+  for stage in stages:
+    tmp_csv += "\t".join(map(escape, [
+      stage.id_stage,
+      stage.id_etu,
+      stage.id_entreprise,
+      stage.promo,
+      stage.domaine.domaine,
+      emploi.id_contact if emploi.id_contact else '-'
+    ])) + "\n"
+
+  zip_file.writestr('stages.csv', tmp_csv)
+
+  tmp_csv = "ID Contact\tID Entreprise\tNom\tMail\n"
+  for contact in contacts:
+    tmp_csv += "\t".join(map(escape, [
+      contact.id_contact,
+      contact.id_entreprise,
+      contact.nom,
+      contact.mail,
+    ])) + "\n"
+
+  zip_file.writestr('contacts.csv', tmp_csv)
+  zip_file.close()
+
+  zip_io.seek(0)
+
+  return send_file(zip_io, attachment_filename='export.zip', as_attachment=True)
 

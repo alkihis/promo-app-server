@@ -3,8 +3,9 @@ from Models.Emploi import Emploi
 from Models.Etudiant import Etudiant
 from Models.Entreprise import Entreprise
 from Models.Stage import Stage
+from Models.Token import Token
 from flask_login import login_required
-from models_helpers import get_student_or_none
+from models_helpers import get_student_or_none, export_all_data_in_csv
 from helpers import is_teacher, get_request, is_truthy
 from errors import ERRORS
 from server import db_session
@@ -41,7 +42,6 @@ def define_teacher_endpoints(app: flask.Blueprint):
 
       # Trouver emplois
       current_year = int(student.annee_sortie)
-
 
       inserted = False
 
@@ -111,3 +111,25 @@ def define_teacher_endpoints(app: flask.Blueprint):
       "thesis": stu_in_thesis_count,
       "in_formation": stu_in_formation_count,
     })
+
+
+  @app.route('/teacher/export', methods=["POST"])
+  def export_students():
+    r = get_request()
+    ids = None
+
+    data = r.form
+
+    if not 'token' in data:
+      return ERRORS.INVALID_CREDENTIALS
+
+    token = data['token']
+    tk: Token = Token.query.filter_by(token=token).one_or_none()
+
+    if not tk or not tk.teacher:
+      return ERRORS.INVALID_CREDENTIALS
+
+    if 'students' in data:
+      ids = list(map(lambda x: int(x), str(data['students']).split(',')))
+
+    return export_all_data_in_csv(ids)

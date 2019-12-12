@@ -14,9 +14,11 @@ def define_domain_endpoints(app: flask.Flask):
   @login_required
   def make_domain():
     r = get_request()
-    stu = get_student_or_none()
+    
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
 
-    if not stu or not r.is_json:
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -33,7 +35,7 @@ def define_domain_endpoints(app: flask.Flask):
       return flask.jsonify(f[0]), 200
 
     # Create new domain
-    dom = Domaine.create(domain=domain, nom=nom)
+    dom = Domaine.create(domaine=domain, nom=nom)
     db_session.add(dom)
     db_session.commit()
 
@@ -43,9 +45,11 @@ def define_domain_endpoints(app: flask.Flask):
   @login_required
   def modify_domain():
     r = get_request()
-    stu = get_student_or_none()
+    
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
 
-    if not stu or not r.is_json:
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
