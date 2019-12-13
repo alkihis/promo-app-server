@@ -1,6 +1,9 @@
 import flask
 from Models.Etudiant import Etudiant
 from Models.Formation import Formation
+from Models.Entreprise import Entreprise
+from Models.Emploi import Emploi
+from Models.Stage import Stage
 from Models.Token import Token
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
@@ -10,7 +13,7 @@ from server import db_session, engine
 from sqlalchemy import and_, or_
 import datetime
 import re
-from typing import List
+from typing import List, Dict
 ### Vues pour l'API /student
 
 def student_routes(app: flask.Flask):
@@ -121,47 +124,33 @@ def student_routes(app: flask.Flask):
 
       student.nom = data['last_name']
 
-    if 'year_in' and 'year_out' in data:
-      # TODO Check validity
+    if 'public' in data and type(data['public']) is bool:
+      student.visible = data['public']
+
+    if 'year_in' in data:
       try:
         year_in = int(data['year_in'])
       except:
-        ERRORS.BAD_REQUEST
-      
-      try:
-        year_out = int(data['year_out'])
-      except:
-        ERRORS.BAD_REQUEST
-                  
-      if year_in > year_out:
-        ERRORS.BAD_REQUEST
+        return ERRORS.BAD_REQUEST
 
-      student.annee_entree = data['year_in']
-      student.annee_sortie = data['year_out']
-
-
-    elif 'year_in' in data:
-      try:
-        year_in = int(data['year_in'])
-      except:
-        ERRORS.BAD_REQUEST
-
-      if year_in >= student.annee_sortie:
+      if student.annee_sortie and year_in >= student.annee_sortie:
         return ERRORS.BAD_REQUEST
       
       student.annee_entree = data['year_in']
 
-    elif 'year_out' in data:
-      # TODO Check validity
-      try:
-          year_out = int(data['year_out'])
-      except:
-        ERRORS.BAD_REQUEST
+    if 'year_out' in data:
+      if data['year_out'] is None:
+        student.annee_sortie = None
+      else:
+        try:
+            year_out = int(data['year_out'])
+        except:
+          return ERRORS.BAD_REQUEST
 
-      if student.annee_entree >= year_out:
-        return ERRORS.BAD_REQUEST
+        if student.annee_entree >= year_out:
+          return ERRORS.BAD_REQUEST
 
-      student.annee_sortie = data['year_out']
+        student.annee_sortie = data['year_out']
 
     if 'email' in data:
       email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
@@ -370,3 +359,93 @@ def student_routes(app: flask.Flask):
       send_ask_relogin_mail(st.id_etu)
 
     return ""
+
+  @app.route('/student/in')
+  @login_required
+  def fetch_student_of_location():
+    r = get_request()
+
+    cmps: List[Entreprise] = []
+    if 'town' in r.args:
+      cmps = Entreprise.query.filter_by(ville=r.args['town']).all()
+
+    jobs_etudiants: Dict[Etudiant, List[Emploi]] = {}
+    stages_etudiants: Dict[Etudiant, List[Stage]] = {}
+
+    for c in cmps:
+      emplois_realises: List[Emploi] = Emploi.query.filter_by(id_entreprise=c.id_entreprise).all()
+      for emploi in emplois_realises:
+        etu: Etudiant = emploi.etudiant
+        if etu in jobs_etudiants:
+          jobs_etudiants[etu].append(emploi)
+        else:
+          jobs_etudiants[etu] = [emploi]
+
+      stages_realises: List[Stage] = Stage.query.filter_by(id_entreprise=c.id_entreprise).all()
+      for stage in stages_realises:
+        etu: Etudiant = stage.etudiant
+        if etu in stages_etudiants:
+          stages_etudiants[etu].append(stage)
+        else:
+          stages_etudiants[etu] = [stage]
+
+    # On a récup tous les emplois/stages par étudiant
+    # On créé des objets partiels
+    # Liste de {
+    #   'student': {'name': str, 'surname': str, 'mail': str}, 
+    #   'type': 'internship'|'job', 
+    #   'ended': bool,
+    #   'company': str
+    # }
+    # On skip les étudiants qui ne veulent pas être visibles
+    available = []
+
+    for student, emplois in jobs_etudiants.items():
+      if not student.visible:
+        continue
+
+      companies_for_student = set()
+
+      for emploi in emplois:
+        if emploi.entreprise.nom in companies_for_student:
+          continue
+
+        companies_for_student.add(emploi.entreprise.nom)
+        ended = emploi.fin != None
+
+        available.append({
+          'ended': ended,
+          'student': {
+            'name': student.nom,
+            'surname': student.prenom,
+            'mail': student.mail
+          },
+          'type': 'job',
+          'company': emploi.entreprise.nom
+        })
+
+    for student, stages in stages_etudiants.items():
+      if not student.visible:
+        continue
+
+      companies_for_student = set()
+
+      for stage in stages:
+        if stage.entreprise.nom in companies_for_student:
+          continue
+
+        companies_for_student.add(stage.entreprise.nom)
+
+        available.append({
+          'ended': True,
+          'student': {
+            'name': student.nom,
+            'surname': student.prenom,
+            'mail': student.mail
+          },
+          'type': 'internship',
+          'company': stage.entreprise.nom
+        })
+
+
+    return flask.jsonify(available)
