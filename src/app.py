@@ -8,6 +8,7 @@ parser.add_argument("-p", "--port", type=int, default=3501, help="Port")
 parser.add_argument("-d", "--debug", help="Enable debug mode", action="store_true")
 parser.add_argument("-i", "--init", help="Clean and re-init SQLite", action="store_true")
 parser.add_argument("-l", "--locations", help="Refresh locations coordinates on startup", action="store_true")
+parser.add_argument('-r', '--askrefresh', help="Ask students who doesn't updated profil since <x> months to update it", default="")
 parser.add_argument("--password", help="Define a new password for teachers", action="store_true")
 parser.add_argument("-u", "--upgrade", help="Import a old database", default="")
 parser.add_argument("--importcsv", help="Import a CSV file for students", default="")
@@ -51,6 +52,19 @@ if program_args.password:
   write_settings_dict(actual_settings)
 
   print("Le mot de passe a été mis à jour.")
+  exit(0)
+
+if program_args.askrefresh:
+  try:
+    months = int(program_args.askrefresh)
+  except:
+    print("Impossible de lire le nombre de mois demandés. Abandon...")
+    exit(1)
+
+  from models_helpers import ask_refresh_to_students
+  ask_refresh_to_students(months)
+  
+  print("Tâche terminée.")
   exit(0)
 
 # Import all modules

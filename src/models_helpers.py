@@ -12,6 +12,7 @@ from errors import ERRORS
 import urllib.parse
 import re
 import datetime
+from datetime import date, timedelta
 import requests
 import sqlite3
 import uuid
@@ -19,7 +20,9 @@ import zipfile
 import json
 from io import BytesIO
 from server import db_session
-from flask import render_template, render_template_string, send_file
+from flask import send_file
+import os
+import jinja2
 from gmail import GMAIL_SERVICE, send_message, create_message, MASTER_ADDRESS
 from const import SITE_URL, STATIC_SITE_URL
 
@@ -607,6 +610,10 @@ def parse_mail_template(content: str, to: List[str], obj: str, as_message = True
 
     @returns Liste de messages/template strings modifiées
   """
+
+  dir_path = os.path.dirname(os.path.realpath(__file__)) + '/../templates/'
+  mail_html = open(dir_path + 'mail.html', 'r').read()
+
   # Escape HTML
   content = re.sub("&", "&amp;", content)
   content = re.sub("<", "&lt;", content)
@@ -650,7 +657,10 @@ def parse_mail_template(content: str, to: List[str], obj: str, as_message = True
       # Student-specific link
       text = re.sub(r'{{ *auth_link +\"(.+?)\" *}}', r'<a target="_blank" href="' + generate_login_link_for(s.id_etu) + r'">\1</a>', text, flags=re.S)
 
-    msg_content = render_template('mail.html', content=text, subject=obj, site_url=SITE_URL, static_site_url=STATIC_SITE_URL)
+    # Utilise Jinja2 et pas Flask pour pouvoir envoyer
+    # des e-mails hors contexte application
+    template = jinja2.Template(mail_html)
+    msg_content = template.render(content=text, subject=obj, site_url=SITE_URL, static_site_url=STATIC_SITE_URL)
 
     # Create the mail
     if as_message:
@@ -907,4 +917,21 @@ def export_all_data_in_csv(stu_ids: List[int] = None):
   zip_io.seek(0)
 
   return send_file(zip_io, attachment_filename='export.zip', as_attachment=True)
+
+
+def ask_refresh_to_students(min_month = 3):
+  """
+    Demande aux étudiants qui n'ont pas actualisé leur profil depuis {min_month}
+    de l'actualiser via e-mail.
+  """
+
+  # Recherche les étudiants ayant pas mis à jour depuis
+  # au moins min_month
+  delta = timedelta(days=min_month*30)
+  max_date = date.today() - delta
+
+  students: List[Etudiant] = Etudiant.query.filter(Etudiant.derniere_modification < max_date).all()
+  
+  for student in students:
+    send_ask_relogin_mail(student.id_etu)
 

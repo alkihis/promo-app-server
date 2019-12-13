@@ -447,5 +447,5 @@ def student_routes(app: flask.Flask):
           'company': stage.entreprise.nom
         })
 
-
     return flask.jsonify(available)
+
