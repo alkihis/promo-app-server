@@ -15,6 +15,7 @@ class Etudiant(db):
   annee_entree = Column(String, nullable=False)
   annee_sortie = Column(String)
   entree_en_m1 = Column(Boolean, nullable=False)
+  visible = Column(Boolean, nullable=False)
   diplome = Column(Boolean, nullable=False, default=False)
   derniere_modification = Column(DateTime, nullable=False)
 
@@ -44,6 +45,7 @@ class Etudiant(db):
     cursus_anterieur: int = None,
     reorientation: int = None,
     diplome: bool = False,
+    visible: bool = True
   ):
     return Etudiant(
       nom=nom, 
@@ -55,7 +57,8 @@ class Etudiant(db):
       reorientation=reorientation,
       entree_en_m1=entree_en_m1,
       diplome=diplome,
-      derniere_modification=datetime.now()
+      derniere_modification=datetime.now(),
+      visible=visible
     )
 
   def to_json(self, full = False):
@@ -70,7 +73,8 @@ class Etudiant(db):
       'graduated': self.diplome,
       'previous_formation': None if not self.cursus_obj else self.cursus_obj.to_json(),
       'next_formation': None if not self.reorientation_obj else self.reorientation_obj.to_json(),
-      'last_update': self.derniere_modification
+      'last_update': self.derniere_modification,
+      'public': self.visible,
     }
 
     if full:

@@ -4,18 +4,25 @@ from Models.Domaine import Domaine
 from Models.Stage import Stage
 from Models.Emploi import Emploi
 from Models.Contact import Contact
+from Models.Formation import Formation
 from Models.AskCreation import AskCreation
 from helpers import get_user, is_teacher, get_request, convert_date, create_token_for, generate_login_link_for, generate_random_token
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Set
 from errors import ERRORS
 import urllib.parse
 import re
 import datetime
+from datetime import date, timedelta
 import requests
 import sqlite3
+import uuid
+import zipfile
 import json
+from io import BytesIO
 from server import db_session
-from flask import render_template, render_template_string
+from flask import send_file
+import os
+import jinja2
 from gmail import GMAIL_SERVICE, send_message, create_message, MASTER_ADDRESS
 from const import SITE_URL, STATIC_SITE_URL
 
@@ -111,10 +118,14 @@ def import_students_from_file(filename: str):
     i = 0
     for line in fp:
       i += 1
+
+      if not line.strip():
+        continue
+
       parts: List[str] = line.strip().split('\t')
 
       try:
-        first_name, last_name, email, graduation_year, is_graduated = parts
+        first_name, last_name, email, graduation_year, is_in_m1, is_graduated = parts
       except:
         print(f"Invalid line {i}: Incorrect number of elements in line.")
         continue
@@ -140,6 +151,7 @@ def import_students_from_file(filename: str):
         mail=email, 
         annee_entree=year_in, 
         annee_sortie=graduation_year,
+        entree_en_m1=(is_in_m1 == "1"),
         diplome=(is_graduated == "1")
       )  
 
@@ -473,6 +485,56 @@ def send_invite_create_profile_mail(mail: str):
   send_basic_mail(content, [mail], "Suivi des promotions du Master Bio-Informatique Lyon")
 
 
+def send_ask_relogin_mail(student: int):
+  """
+    Envoie un e-mail à un étudiant lui invitant à se connecter 
+    sur le site pour actualiser son profil via le lien contenu dans le mail.
+
+    student: student ID
+  """
+  s: Etudiant = Etudiant.query.filter_by(id_etu=student).one_or_none()
+
+  if not s:
+    raise ValueError("Student not found")
+
+  content = """
+    {{ title Actualisation de votre profil }}
+    {{ subtitle Application de suivi des promotions du Master Bio-Informatique }}
+
+    Bonjour {{ +strong }}{{ studentFirstName }}{{ -strong }}, 
+    {{ strong promos@bioinfo }} est un service web vous permettant de renseigner des informations
+    en lien avec votre master effectué à Lyon.
+
+    {{ new_line }}
+
+    Cela fait un certain temps que l'on ne vous a pas vu sur la plateforme.
+    Et si vous passiez nous dire ce que vous devenez ?
+
+    {{ new_line }}
+
+    {{ italic Vos informations nous aident à proposer une formation plus pertinente. }}
+
+    {{ +subtitle }}
+      {{ +center }}
+        {{ auth_link "Cliquez ici pour vous connecter à votre profil" }}
+      {{ -center }}
+    {{ -subtitle }}
+
+    {{ subtitle Accès au site }}  
+
+    {{ +strong }}{{ student }}{{ -strong }}, pour vous connecter, suivez le lien de connexion ci-dessus.
+    Il vous amène directement sur votre tableau de bord, où vous serez en mesure d'ajouter et
+    actualiser toutes vos informations.
+
+    {{ new_line }}
+    {{ new_line }}
+
+    {{ strong Merci pour votre participation ! }}
+  """
+
+  send_basic_mail(content, [s.mail], "Actualisation de votre profil - Suivi des promotions du Master Bio-Informatique")
+
+
 def send_welcome_mail(student: int):
   """
     Envoie un e-mail à un étudiant lui invitant à se connecter 
@@ -548,6 +610,10 @@ def parse_mail_template(content: str, to: List[str], obj: str, as_message = True
 
     @returns Liste de messages/template strings modifiées
   """
+
+  dir_path = os.path.dirname(os.path.realpath(__file__)) + '/../templates/'
+  mail_html = open(dir_path + 'mail.html', 'r').read()
+
   # Escape HTML
   content = re.sub("&", "&amp;", content)
   content = re.sub("<", "&lt;", content)
@@ -591,7 +657,10 @@ def parse_mail_template(content: str, to: List[str], obj: str, as_message = True
       # Student-specific link
       text = re.sub(r'{{ *auth_link +\"(.+?)\" *}}', r'<a target="_blank" href="' + generate_login_link_for(s.id_etu) + r'">\1</a>', text, flags=re.S)
 
-    msg_content = render_template('mail.html', content=text, subject=obj, site_url=SITE_URL, static_site_url=STATIC_SITE_URL)
+    # Utilise Jinja2 et pas Flask pour pouvoir envoyer
+    # des e-mails hors contexte application
+    template = jinja2.Template(mail_html)
+    msg_content = template.render(content=text, subject=obj, site_url=SITE_URL, static_site_url=STATIC_SITE_URL)
 
     # Create the mail
     if as_message:
@@ -620,8 +689,7 @@ def create_a_student(data, with_mail = True):
   first_name, last_name, email = data['first_name'], data['last_name'], data['email']
   year_in, entree, diplome = data['year_in'], data['entered_in'], data['graduated']
 
-  # Do not forget to change datestring to date object !
-  # birthdate = convert_date(birthdate)
+  #### TODO check data of student !
 
   student_check = Etudiant.query.filter_by(mail=email).all()
   if len(student_check):
@@ -661,4 +729,217 @@ def create_a_student(data, with_mail = True):
     send_welcome_mail(etu.id_etu)
 
   return etu
+
+
+def escape(s):
+  return str(s).replace('\t', ' ')
+
+
+def student_as_csv(student: Etudiant = None, full = False):
+  if not student:
+    end = ""
+    if full:
+      end = '\t' + formation_as_csv() + '\t' + formation_as_csv(prefix="formation postérieure")
+
+    return "ID Étudiant\tNom étudiant\tPrénom étudiant\tE-mail\tAnnée d'entrée\tAnnée de sortie\tEst diplômé\tEst entré en M1" + end
+
+  annee_sortie = student.annee_sortie
+  if not annee_sortie and student.diplome:
+    if student.entree_en_m1:
+      annee_sortie = student.annee_entree + 2
+    else:
+      annee_sortie = student.annee_entree + 1
+
+  no_formation = "\t\t\t"
+
+  return "\t".join(map(escape, [
+    student.id_etu,
+    student.nom,
+    student.prenom,
+    student.mail,
+    student.annee_entree,
+    annee_sortie if annee_sortie else "",
+    "1" if student.diplome else "0",
+    "1" if student.entree_en_m1 else "0"
+  ])) + (("\t" + (formation_as_csv(student.cursus_obj) if student.cursus_anterieur else no_formation) + '\t' + \
+         (formation_as_csv(student.reorientation_obj) if student.reorientation else no_formation)) if full else "")
+
+
+def formation_as_csv(formation: Formation = None, prefix = "formation antérieure"):
+  if not formation:
+    return f"ID {prefix}\tFilière {prefix}\tLieu {prefix}\tNiveau {prefix}"
+
+  return "\t".join(map(escape, [
+    formation.id_form,
+    formation.filiere,
+    formation.lieu,
+    formation.niveau,
+  ]))
+
+
+def job_as_csv(emploi: Emploi = None):
+  if not emploi:
+    return "ID Emploi\tType contrat\tDomaine\tNiveau\tDébut\tFin\tSalaire\t" + company_as_csv() + '\t' + contact_as_csv() + '\t' + student_as_csv()
+
+  return "\t".join(map(escape, [
+    emploi.id_emploi,
+    emploi.contrat,
+    emploi.domaine.nom,
+    emploi.niveau,
+    emploi.debut,
+    emploi.fin if emploi.fin else '',
+    emploi.salaire if emploi.salaire else '',
+  ])) + "\t" + company_as_csv(emploi.entreprise) + '\t' + (contact_as_csv(emploi.contact) if emploi.id_contact else "\t\t") + '\t' + student_as_csv(emploi.etudiant)
+
+
+def contact_as_csv(contact: Contact = None, full = False):
+  if full:
+    if not contact:
+      return "ID Contact\tNom contact\tMail contact\t" + company_as_csv() 
+    
+    return "\t".join(map(escape, [
+      contact.id_contact,
+      contact.nom,
+      contact.mail,
+    ])) + "\t" + company_as_csv(contact.entreprise)
+
+  if not contact:
+    return "ID Contact\tNom contact\tMail contact"
+
+  return "\t".join(map(escape, [
+    contact.id_contact,
+    contact.nom,
+    contact.mail,
+  ]))
+
+
+def internship_as_csv(stage: Stage = None):
+  if not stage:
+    return "ID Stage\tAnnée du stage\tDomaine\t" + company_as_csv() + '\t' + contact_as_csv() + '\t' + student_as_csv()
+
+  return "\t".join(map(escape, [
+    stage.id_stage,
+    stage.promo,
+    stage.domaine.nom,
+  ])) + "\t" + company_as_csv(stage.entreprise) + '\t' + (contact_as_csv(stage.contact) if stage.id_contact else "\t\t") + '\t' + student_as_csv(stage.etudiant)
+
+
+def company_as_csv(entreprise: Entreprise = None):
+  if not entreprise:
+    return "ID Entreprise\tNom entreprise\tStatut entreprise\tTaille entreprise\tVille entreprise\tLatitude\tLongitude"
+
+  return "\t".join(map(escape, [
+    entreprise.id_entreprise,
+    entreprise.nom,
+    entreprise.statut,
+    entreprise.taille,
+    entreprise.ville,
+    entreprise.lat,
+    entreprise.lng,
+  ]))
+
+
+def export_all_data_in_csv(stu_ids: List[int] = None):
+  if stu_ids:
+    students: List[Etudiant] = Etudiant.query.filter(Etudiant.id_etu.in_(stu_ids)).all()
+  else: 
+    students: List[Etudiant] = Etudiant.query.all()
+
+  # Référence toutes les entreprises, stages et emplois
+  entreprises: Set[Entreprise] = set()
+  emplois: Set[Emploi] = set()
+  stages: Set[Stage] = set()
+  contacts: Set[Contact] = set()
+  formations: Set[Formation] = set()
+
+  for student in students:
+    if student.cursus_obj:
+      formations.add(student.cursus_obj)
+    if student.reorientation_obj:
+      formations.add(student.reorientation_obj)
+
+    e_all: List[Emploi] = Emploi.query.filter_by(id_etu=student.id_etu).all()
+    for e in e_all:
+      emplois.add(e)
+
+      contact = e.contact
+      entreprise = e.entreprise
+
+      entreprises.add(entreprise)
+      if contact:
+        contacts.add(contact)
+
+    s_all: List[Stage] = Stage.query.filter_by(id_etu=student.id_etu).all()
+    for s in s_all:
+      stages.add(s)
+
+      contact = s.contact
+      entreprise = s.entreprise
+
+      entreprises.add(entreprise)
+      if contact:
+        contacts.add(contact)
+
+  # On a tous les stages, emplois, toutes les entreprises et tous les contacts
+  # Crée le csv
+  zip_io = BytesIO()
+  zip_file = zipfile.ZipFile(zip_io, 'w', compression=zipfile.ZIP_DEFLATED)
+
+  tmp_csv = student_as_csv(full=True) + "\n"
+  for student in students:
+    tmp_csv += student_as_csv(student, full=True) + "\n"
+
+  zip_file.writestr('etudiants.csv', tmp_csv)
+
+  tmp_csv = formation_as_csv() + "\n"
+  for formation in formations:
+    tmp_csv += formation_as_csv(formation) + "\n"
+
+  zip_file.writestr('formations.csv', tmp_csv)
+
+  tmp_csv = company_as_csv() + "\n"
+  for entreprise in entreprises:
+    tmp_csv += company_as_csv(entreprise) + "\n"
+
+  zip_file.writestr('entreprises.csv', tmp_csv)
+
+  tmp_csv = job_as_csv() + "\n"
+  for emploi in emplois:
+    tmp_csv += job_as_csv(emploi) + "\n"
+
+  zip_file.writestr('emplois.csv', tmp_csv)
+
+  tmp_csv = internship_as_csv() + "\n"
+  for stage in stages:
+    tmp_csv += internship_as_csv(stage) + "\n"
+
+  zip_file.writestr('stages.csv', tmp_csv)
+
+  tmp_csv = contact_as_csv(full=True) + "\n"
+  for contact in contacts:
+    tmp_csv += contact_as_csv(contact, full=True) + "\n"
+
+  zip_file.writestr('contacts.csv', tmp_csv)
+  zip_file.close()
+
+  zip_io.seek(0)
+
+  return send_file(zip_io, attachment_filename='export.zip', as_attachment=True)
+
+
+def ask_refresh_to_students(min_month = 3):
+  """
+    Demande aux étudiants qui n'ont pas actualisé leur profil depuis {min_month}
+    de l'actualiser via e-mail.
+  """
+
+  # Recherche les étudiants ayant pas mis à jour depuis
+  # au moins min_month
+  delta = timedelta(days=min_month*30)
+  max_date = date.today() - delta
+
+  students: List[Etudiant] = Etudiant.query.filter(Etudiant.derniere_modification < max_date).all()
+  
+  for student in students:
+    send_ask_relogin_mail(student.id_etu)
 

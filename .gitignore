@@ -9,3 +9,4 @@ credentials.json
 .vscode
 dump.json
 *.pickle
+.*DS_Store
