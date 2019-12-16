@@ -44,6 +44,9 @@ def define_contact_endpoints(app: flask.Flask):
     if not ent:
       ERRORS.BAD_REQUEST
     
+    special_check = r"^[\w_ -]+$" 
+    if not re.match(special_check,name):
+      return ERRORS.BAD_REQUEST
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):
@@ -111,6 +114,7 @@ def define_contact_endpoints(app: flask.Flask):
 
     name, mail, id_contact = data['name'], data['mail'], data['id']
 
+
     if type(id_contact) is not int:
       return ERRORS.BAD_REQUEST
 
@@ -119,6 +123,15 @@ def define_contact_endpoints(app: flask.Flask):
     if not c:
       return ERRORS.RESOURCE_NOT_FOUND
     
+    if type(name) is not str:
+      return ERRORS.BAD_REQUEST
+
+    special_check = r"^[\w_ -]+$" 
+    if not re.match(special_check,name):
+      return ERRORS.BAD_REQUEST
+
+    if type(mail) is not str:
+      return ERRORS.BAD_REQUEST
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):

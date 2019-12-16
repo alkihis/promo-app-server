@@ -27,6 +27,10 @@ def define_formation_endpoints(app: flask.Flask):
 
     branch, location, level = data['name'], data['location'], data['level']
 
+
+    if type(branch) is not str:
+      return ERRORS.BAD_REQUEST
+
     # Check level: must be in ENUM
     if type(level) is not str:
       return ERRORS.BAD_REQUEST
@@ -82,11 +86,20 @@ def define_formation_endpoints(app: flask.Flask):
       return ERRORS.RESOURCE_NOT_FOUND
 
     # TODO check each setting validity
+    if type(branch) is not str:
+      return ERRORS.BAD_REQUEST
     f.filiere = branch
+    
     # Query le lieu pr obtenir lat & long si lieu != location
     if f.lieu != location:
       f.lieu = location
 
+    if type(level) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_levels = {"licence", "master", "phd", "other"}
+    if level not in valid_levels:
+      return ERRORS.BAD_REQUEST
     f.niveau = level
     db_session.commit()
 

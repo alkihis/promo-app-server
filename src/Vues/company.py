@@ -33,6 +33,9 @@ def define_company_endpoints(app: flask.Flask):
     
     if len(f):
       return flask.jsonify(f[0])
+    
+    if type(name) is not str:
+      return ERRORS.BAD_REQUEST
 
     # Checks for size and status (enum voir TS interfaces.ts)
     if type(size) is not str:
@@ -89,6 +92,8 @@ def define_company_endpoints(app: flask.Flask):
     name, city, size, status = data['name'], data['town'], data['size'], data['status']
 
     # Todo add check for every property
+    if type(name) is not str:
+      return ERRORS.BAD_REQUEST
     e.nom = name
 
     if city != e.ville:
@@ -97,8 +102,23 @@ def define_company_endpoints(app: flask.Flask):
       e.lat = gps_coords[0]
       e.lng = gps_coords[1]
 
+
+    if type(size) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_comp_size = {"small", "big", "medium", "very_big"}
+    if size not in valid_comp_size:
+      return ERRORS.BAD_REQUEST 
     e.taille = size
+
+    if type(status) is not str:
+      return ERRORS.BAD_REQUEST
+
+    valid_comp_status = {"public", "private"}
+    if status not in valid_comp_status:
+      return ERRORS.BAD_REQUEST
     e.statut = status
+
     db_session.commit()
 
     return flask.jsonify(e)
