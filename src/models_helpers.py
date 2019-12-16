@@ -629,25 +629,25 @@ def create_a_student(data, with_mail = True):
 
   special_check = r"^[\w_ -]+$" 
   if not re.match(special_check,first_name):
-    return ERRORS.BAD_REQUEST
+    return ERRORS.INVALID_INPUT_VALUE
 
   if not re.match(special_check,last_name):
-    return ERRORS.BAD_REQUEST
+    return ERRORS.INVALID_INPUT_VALUE
 
   email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
   if not re.match(email_catch, email):
-    return ERRORS.BAD_REQUEST
+    return ERRORS.INVALID_INPUT_TYPE
 
   current_date = datetime.datetime.now().date().year
 
   if type(diplome) is not bool:
-    return ERRORS.BAD_REQUEST
+    return ERRORS.INVALID_INPUT_TYPE
 
   try:
     if int(year_in) > current_date or int(year_in) < 2015:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_DATE
   except:
-    return ERRORS.BAD_REQUEST
+    return ERRORS.INVALID_INPUT_TYPE
 
   
   # Create student

@@ -46,11 +46,11 @@ def define_contact_endpoints(app: flask.Flask):
     
     special_check = r"^[\w_ -]+$" 
     if not re.match(special_check,name):
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_VALUE
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_VALUE
 
     # Create new contact
     cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise)
@@ -116,7 +116,7 @@ def define_contact_endpoints(app: flask.Flask):
 
 
     if type(id_contact) is not int:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     c: Contact = Contact.query.filter_by(id_contact=id_contact).one_or_none()
 
@@ -124,18 +124,18 @@ def define_contact_endpoints(app: flask.Flask):
       return ERRORS.RESOURCE_NOT_FOUND
     
     if type(name) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     special_check = r"^[\w_ -]+$" 
     if not re.match(special_check,name):
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_VALUE
 
     if type(mail) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_VALUE
 
     # Create new contact
     c.mail = mail

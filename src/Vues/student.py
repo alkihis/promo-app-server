@@ -109,7 +109,7 @@ def student_routes(app: flask.Flask):
       # TODO Check validity
       special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['first_name']):
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       student.prenom = data['first_name']
 
@@ -117,7 +117,7 @@ def student_routes(app: flask.Flask):
       # TODO Check validity
       special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['last_name']):
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       student.nom = data['last_name']
 
@@ -126,15 +126,15 @@ def student_routes(app: flask.Flask):
       try:
         year_in = int(data['year_in'])
       except:
-        ERRORS.BAD_REQUEST
+        ERRORS.INVALID_DATE
       
       try:
         year_out = int(data['year_out'])
       except:
-        ERRORS.BAD_REQUEST
+        ERRORS.INVALID_DATE
                   
       if year_in > year_out:
-        ERRORS.BAD_REQUEST
+        ERRORS.INVALID_DATE
 
       student.annee_entree = data['year_in']
       student.annee_sortie = data['year_out']
@@ -144,10 +144,10 @@ def student_routes(app: flask.Flask):
       try:
         year_in = int(data['year_in'])
       except:
-        ERRORS.BAD_REQUEST
+        ERRORS.INVALID_DATE
 
       if year_in >= student.annee_sortie:
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_DATE
       
       student.annee_entree = data['year_in']
 
@@ -156,17 +156,17 @@ def student_routes(app: flask.Flask):
       try:
           year_out = int(data['year_out'])
       except:
-        ERRORS.BAD_REQUEST
+        ERRORS.INVALID_DATE
 
       if student.annee_entree >= year_out:
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_DATE
 
       student.annee_sortie = data['year_out']
 
     if 'email' in data:
       email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
       if not re.match(email_catch, data['email']):
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       student.mail = data['email']
       

@@ -84,25 +84,22 @@ def define_job_endpoints(app: flask.Flask):
 
     #CHECK Contract in ENUM
     if type(contract) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
     
     #as_describe in client part interfaces.ts jobtypes
     valid_contracts = {"cdi", "alternance", "cdd", "these"}
     if contract not in valid_contracts:
-        return ERRORS.BAD_REQUEST
+        return ERRORS.UNEXPECTED_INPUT_VALUE
 
-    if type(level) is not str:
-      return ERRORS.BAD_REQUEST
 
     #CHECK Level in ENUM
     if type(level) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
     
     #as_describe in client part interfaces.ts joblevels
     valid_levels = {"technicien", "ingenieur", "doctorant", "alternant"}
     if level not in valid_levels:
-      return ERRORS.BAD_REQUEST
-
+      return ERRORS.UNEXPECTED_INPUT_VALUE
     # Create new emploi
     stu.refresh_update()
     emp = Emploi.create(
@@ -188,7 +185,7 @@ def define_job_endpoints(app: flask.Flask):
       except:
         print("Start date error")
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_DATE
 
       job.debut = start
   
@@ -201,7 +198,7 @@ def define_job_endpoints(app: flask.Flask):
         except:
           print("End date error")
           db_session.rollback()
-          return ERRORS.BAD_REQUEST
+          return ERRORS.INVALID_DATE
 
         job.fin = end
 
@@ -210,13 +207,13 @@ def define_job_endpoints(app: flask.Flask):
       #CHECK Level in ENUM
       if type(level) is not str:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_TYPE
       
       #as_describe in client part interfaces.ts joblevels
       valid_levels = {"technicien", "ingenieur", "doctorant", "alternant"}
       if level not in valid_levels:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.UNEXPECTED_INPUT_VALUE
       
       job.niveau = data['level']
 
@@ -225,13 +222,13 @@ def define_job_endpoints(app: flask.Flask):
       #Check contract in ENUM
       if type(contract) is not str:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_TYPE
     
       #as_describe in client part interfaces.ts jobtypes
       valid_contracts = {"cdi", "alternance", "cdd", "thèse"}
       if contract not in valid_contracts:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.UNEXPECTED_INPUT_VALUE
 
       job.contrat = contract
 
@@ -244,7 +241,7 @@ def define_job_endpoints(app: flask.Flask):
           job.salaire = salaire
         except:
           db_session.rollback()
-          return ERRORS.BAD_REQUEST
+          return ERRORS.INVALID_INPUT_TYPE
 
 
     if 'contact' in data:

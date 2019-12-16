@@ -29,15 +29,15 @@ def define_formation_endpoints(app: flask.Flask):
 
 
     if type(branch) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     # Check level: must be in ENUM
     if type(level) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
     
     valid_levels = {"licence", "master", "phd", "other"}
     if level not in valid_levels:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.UNEXPECTED_INPUT_VALUE
 
 
     ## Search for similar formations TODO improve search
@@ -77,7 +77,7 @@ def define_formation_endpoints(app: flask.Flask):
     branch, location, level, id_formation = data['branch'], data['location'], data['level'], data['id']
 
     if type(id_formation) is not int:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     # TODO check level: must be in ENUM
     f: Formation = Formation.query.filter_by(id_form=id_formation).one_or_none()
@@ -87,7 +87,7 @@ def define_formation_endpoints(app: flask.Flask):
 
     # TODO check each setting validity
     if type(branch) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
     f.filiere = branch
     
     # Query le lieu pr obtenir lat & long si lieu != location
@@ -95,11 +95,11 @@ def define_formation_endpoints(app: flask.Flask):
       f.lieu = location
 
     if type(level) is not str:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     valid_levels = {"licence", "master", "phd", "other"}
     if level not in valid_levels:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.UNEXPECTED_INPUT_VALUE
     f.niveau = level
     db_session.commit()
 
