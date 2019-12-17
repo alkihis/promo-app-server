@@ -10,6 +10,7 @@ from errors import ERRORS
 from server import db_session, engine
 from typing import List, Tuple, Dict
 from sqlalchemy import and_, or_
+import re
 
 def define_company_endpoints(app: flask.Flask):
   @app.route('/company/create', methods=["POST"])
@@ -37,6 +38,10 @@ def define_company_endpoints(app: flask.Flask):
     if type(name) is not str:
       return ERRORS.INVALID_INPUT_TYPE
 
+    special_check = r"^[\w_ -]+$" 
+    if not re.match(special_check, name):
+      return ERRORS.INVALID_INPUT_VALUE
+
     # Checks for size and status (enum voir TS interfaces.ts)
     if type(size) is not str:
       return ERRORS.INVALID_INPUT_TYPE
@@ -55,7 +60,6 @@ def define_company_endpoints(app: flask.Flask):
 
     gps_coords = get_location_of_company(city)
 
-    # TODO add checks for size and status (enum voir TS interfaces.ts)
     # Create new company
     comp = Entreprise.create(nom=name, ville=city, taille=size, statut=status, lat=gps_coords[0], lng=gps_coords[1])
     db_session.add(comp)
@@ -90,9 +94,13 @@ def define_company_endpoints(app: flask.Flask):
 
     name, city, size, status = data['name'], data['town'], data['size'], data['status']
 
-    # Todo add check for every property
     if type(name) is not str:
       return ERRORS.INVALID_INPUT_TYPE
+    
+    special_check = r"^[\w_ -]+$" 
+    if not re.match(special_check, name):
+      return ERRORS.INVALID_INPUT_VALUE
+
     e.nom = name
 
     if city != e.ville:

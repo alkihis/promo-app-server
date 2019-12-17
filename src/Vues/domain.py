@@ -28,7 +28,7 @@ def define_domain_endpoints(app: flask.Flask):
 
     domain, nom = data['domain'], data['name']
 
-    ## Search for similar domains TODO improve search
+    ## Search for similar domains
     f = Domaine.query.filter(Domaine.domaine.ilike(f"{domain}")).all()
 
     if len(f):
@@ -73,7 +73,6 @@ def define_domain_endpoints(app: flask.Flask):
 
     search = Domaine.query.filter_by(domaine=domain).one_or_none()
     if search and d.domaine != search.domaine:
-      # TODO message CLIENT error already exists
       return ERRORS.DOMAIN_ALREADY_EXISTS
 
     d.nom = nom

@@ -33,7 +33,6 @@ def define_auth_routes(app: flask.Flask):
   def login_for_teacher():
     r = get_request()
 
-    # TODO make verif for password
     if r.is_json and 'password' in r.json and bcrypt.check_password_hash(get_teacher_password_hash(), r.json['password']):
       # Cherche si un token existe
       t: Token = get_or_create_token_for(None, True)

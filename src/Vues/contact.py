@@ -26,7 +26,7 @@ def define_contact_endpoints(app: flask.Flask):
 
     name, mail, id_entreprise = data['name'], data['mail'], data['id_entreprise']
 
-    ## Search for similar contact TODO improve search
+    ## Search for similar contact
     f = Contact.query.filter(
       and_(
         Contact.nom.ilike(f"{name}"), 
@@ -135,7 +135,6 @@ def define_contact_endpoints(app: flask.Flask):
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):
-      # TODO message CLIENT
       return ERRORS.INVALID_EMAIL
 
     # Create new contact

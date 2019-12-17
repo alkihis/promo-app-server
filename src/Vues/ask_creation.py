@@ -54,7 +54,7 @@ def define_ask_creation_routes(app: flask.Blueprint):
     a: AskCreation = AskCreation.query.filter_by(token=token).one_or_none()
 
     if not a:
-      # Token does not exists TODO message CLIENT
+      # Token does not exists
       return ERRORS.RESOURCE_NOT_FOUND
 
     etu = create_a_student(data)

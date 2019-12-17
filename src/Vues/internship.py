@@ -32,8 +32,8 @@ def define_internship_endpoints(app: flask.Flask):
 
     promo_year, id_entreprise, domain, id_contact = data['promo_year'], data['company'], data['domain'], data['contact']
     
-    # TODO check if promo_year is okay for this student !
-    if not stu.annee_entree <= data['promo_year'] <= stu.annee_sortie:
+    # Check if promo_year is okay for this student !
+    if not int(stu.annee_entree) <= int(data['promo_year']) <= int(stu.annee_sortie):
       return ERRORS.INVALID_DATE
 
     ## Check company id
@@ -177,7 +177,7 @@ def define_internship_endpoints(app: flask.Flask):
     if not is_teacher() and stu.id_etu != internship.id_etu:
       return ERRORS.INVALID_CREDENTIALS
 
-    # TODO properly delete internship (maybe cascade is not working)
+    # Properly delete internship (maybe cascade is not working)
     stu.refresh_update()
     db_session.delete(internship)
     db_session.commit()

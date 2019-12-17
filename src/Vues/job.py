@@ -315,7 +315,7 @@ def define_job_endpoints(app: flask.Flask):
     if not is_teacher() and stu.id_etu != job.id_etu:
       return ERRORS.INVALID_CREDENTIALS
 
-    # TODO properly delete job (maybe cascade is not working)
+    # Properly delete job (maybe cascade is not working)
     stu.refresh_update()
     db_session.delete(job)
     db_session.commit()
