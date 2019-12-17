@@ -20,8 +20,8 @@ def define_auth_routes(app: flask.Flask):
     e: Etudiant = Etudiant.query.filter_by(mail=r.args['email']).one_or_none()
 
     if not e:
-      # Ne génère pas d'erreur
-      return ""
+      # Etu introuvable
+      return ERRORS.STUDENT_NOT_FOUND
 
     send_welcome_mail(e.id_etu)
 
@@ -40,7 +40,7 @@ def define_auth_routes(app: flask.Flask):
 
       return flask.jsonify({'token': t.token})
     else:
-      return ERRORS.error("INVALID_PASSWORD")
+      return ERRORS.INVALID_PASSWORD
 
   ## Validate (check validity) a token
   @app.route('/auth/validate', methods=['POST'])
@@ -78,13 +78,13 @@ def define_auth_routes(app: flask.Flask):
       t: Token = Token.query.filter_by(token=token).one_or_none()
 
       if not t:
-        return ERRORS.error("NOT_FOUND")
+        return ERRORS.NOT_FOUND
 
       if t.id_etu == current_etu_id:
         db_session.delete(t)
         db_session.commit()
       else:
-        return ERRORS.error("INVALID_CREDENTIALS")
+        return ERRORS.INVALID_CREDENTIALS
 
   ## Get all tokens linked to logged user
   @app.route('/token/all')

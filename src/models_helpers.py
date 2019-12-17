@@ -405,6 +405,7 @@ def convert_contrat(contrat: str):
     'alternance': 'alternance',
     'CDI': 'cdi',
     'CDD': 'cdd',
+    'other': 'other',
   }
   return old_to_new[contrat]
 
@@ -689,11 +690,9 @@ def create_a_student(data, with_mail = True):
   first_name, last_name, email = data['first_name'], data['last_name'], data['email']
   year_in, entree, diplome = data['year_in'], data['entered_in'], data['graduated']
 
-  #### TODO check data of student !
-
   student_check = Etudiant.query.filter_by(mail=email).all()
   if len(student_check):
-    return ERRORS.CONFLICT
+    return ERRORS.STUDENT_EXISTS
 
   special_check = r"^[\w_ -]+$" 
   if not re.match(special_check,first_name):
@@ -704,7 +703,7 @@ def create_a_student(data, with_mail = True):
 
   email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
   if not re.match(email_catch, email):
-    return ERRORS.INVALID_INPUT_TYPE
+    return ERRORS.INVALID_EMAIL
 
   current_date = datetime.datetime.now().date().year
 

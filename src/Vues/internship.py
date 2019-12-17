@@ -19,13 +19,13 @@ def define_internship_endpoints(app: flask.Flask):
     r = get_request()
     stu = get_student_or_none()
 
-    if not stu or not r.is_json:
-      print("Student is invalid")
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
 
-    data = r.json
+    if not stu:
+      return ERRORS.STUDENT_NOT_FOUND
 
-    ########### TODO: check parametres internships
+    data = r.json
 
     if not {'promo_year', 'company', 'domain', 'contact'} <= set(data):
       return ERRORS.MISSING_PARAMETERS
@@ -34,23 +34,19 @@ def define_internship_endpoints(app: flask.Flask):
     
     # TODO check if promo_year is okay for this student !
     if not stu.annee_entree <= data['promo_year'] <= stu.annee_sortie:
-      print ("invalid promotion year for student")
       return ERRORS.INVALID_DATE
 
     ## Check company id
     ent: Entreprise = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
 
     if not ent:
-      print("Not entreprise")
-      return ERRORS.BAD_REQUEST
-
+      return ERRORS.COMPANY_NOT_FOUND
 
     ##  Domain to id
     dom: Domaine = Domaine.query.filter_by(domaine=domain).one_or_none()
 
     if not dom:
-      print("Not domaine")
-      return ERRORS.BAD_REQUEST
+      return ERRORS.DOMAIN_NOT_FOUND
     
     id_domain = dom.id_domaine
 
@@ -60,7 +56,7 @@ def define_internship_endpoints(app: flask.Flask):
       cont: Contact = Contact.query.filter_by(id_contact=id_contact).one_or_none()
 
       if not cont:
-        return ERRORS.BAD_REQUEST
+        return ERRORS.CONTACT_NOT_FOUND
 
     # Create new internship
     stu.refresh_update()
@@ -84,7 +80,6 @@ def define_internship_endpoints(app: flask.Flask):
     stu = get_student_or_none()
 
     if not stu or not r.is_json:
-      print("Student is invalid")
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -100,7 +95,6 @@ def define_internship_endpoints(app: flask.Flask):
     if not is_teacher() and internship.id_etu != stu.id_etu:
       return ERRORS.INVALID_CREDENTIALS
 
-    ########### TODO: check parametres internships
     if 'promo_year' in data:
       internship.promo = data['promo_year']
 
@@ -109,7 +103,7 @@ def define_internship_endpoints(app: flask.Flask):
 
       if not ent:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.COMPANY_NOT_FOUND
 
       internship.id_entreprise = ent.id_entreprise
 
@@ -118,7 +112,7 @@ def define_internship_endpoints(app: flask.Flask):
 
       if not dom:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.DOMAIN_NOT_FOUND
 
       internship.id_domaine = dom.id_domaine
 
@@ -130,7 +124,7 @@ def define_internship_endpoints(app: flask.Flask):
 
         if not cont:
           db_session.rollback()
-          return ERRORS.BAD_REQUEST
+          return ERRORS.CONTACT_NOT_FOUND
 
         internship.id_contact = cont.id_contact
 
@@ -143,11 +137,9 @@ def define_internship_endpoints(app: flask.Flask):
   @app.route('/internship/all')
   @login_required
   def fetch_intership():
-    r = get_request()
-
     stu: Etudiant = get_student_or_none()
     if not stu:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     return flask.jsonify(Stage.query.filter_by(id_etu=stu.id_etu).all())
 
@@ -162,11 +154,9 @@ def define_internship_endpoints(app: flask.Flask):
 
     stu = get_student_or_none()
 
-    if not stu:
-      return ERRORS.BAD_REQUEST
-
-    if not is_teacher() and stu.id_etu != internship.id_etu:
-      return ERRORS.INVALID_CREDENTIALS
+    if not is_teacher():
+      if not stu or stu.id_etu != internship.id_etu:
+        return ERRORS.INVALID_CREDENTIALS
 
     return flask.jsonify(internship)
 
@@ -182,7 +172,7 @@ def define_internship_endpoints(app: flask.Flask):
     stu = get_student_or_none()
 
     if not stu:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     if not is_teacher() and stu.id_etu != internship.id_etu:
       return ERRORS.INVALID_CREDENTIALS

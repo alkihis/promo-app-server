@@ -19,18 +19,16 @@ def define_job_endpoints(app: flask.Flask):
     r = get_request()
     stu = get_student_or_none()
 
-    if not stu or not r.is_json:
-      print("Student is invalid")
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
+
+    if not stu:
+      return ERRORS.STUDENT_NOT_FOUND
 
     user_id = stu.id_etu
     data = r.json
 
-    ########### TODO: check parametres emplois
-
     if not {'start', 'end', 'contract', 'salary', 'level', 'company', 'domain', 'contact'} <= set(data):
-      print("Parameters")
-      print(list(set(data)))
       return ERRORS.MISSING_PARAMETERS
 
     start, end, contract, salary, level, id_entreprise = data['start'], data['end'], data['contract'], data['salary'], data['level'], data['company']
@@ -39,8 +37,7 @@ def define_job_endpoints(app: flask.Flask):
     list_d: List[Domaine] = Domaine.query.filter_by(domaine=domain).all()
 
     if not len(list_d):
-      print("Domain is not correct")
-      return ERRORS.BAD_REQUEST
+      return ERRORS.DOMAIN_NOT_FOUND
     try:
       id_entreprise = int(id_entreprise)
 
@@ -50,36 +47,31 @@ def define_job_endpoints(app: flask.Flask):
       if id_contact is not None:
         id_contact = int(id_contact)
     except:
-      print("ID value error")
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     id_domain = list_d[0].id_domaine
 
     try:
       start = convert_date(start)
     except:
-      print("Start date error")
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_DATE
 
     if end is not None:
       try:
         end = convert_date(end)
       except:
-        print("End date error")
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_DATE
 
     # Teste si l'entreprise existe
     e = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
     if not e:
-      print("Company not found")
-      return ERRORS.BAD_REQUEST
+      return ERRORS.COMPANY_NOT_FOUND
 
     # Teste si le contact existe
     if id_contact is not None:
       c = Contact.query.filter_by(id_contact=id_contact).one_or_none()
       if not c:
-        print("Contact not found")
-        return ERRORS.BAD_REQUEST
+        return ERRORS.CONTACT_NOT_FOUND
 
 
     #CHECK Contract in ENUM
@@ -87,7 +79,7 @@ def define_job_endpoints(app: flask.Flask):
       return ERRORS.INVALID_INPUT_TYPE
     
     #as_describe in client part interfaces.ts jobtypes
-    valid_contracts = {"cdi", "alternance", "cdd", "these"}
+    valid_contracts = {"cdi", "alternance", "cdd", "these", 'other'}
     if contract not in valid_contracts:
         return ERRORS.UNEXPECTED_INPUT_VALUE
 
@@ -97,7 +89,7 @@ def define_job_endpoints(app: flask.Flask):
       return ERRORS.INVALID_INPUT_TYPE
     
     #as_describe in client part interfaces.ts joblevels
-    valid_levels = {"technicien", "ingenieur", "doctorant", "alternant"}
+    valid_levels = {"technicien", "ingenieur", "doctorant", "alternant", "other"}
     if level not in valid_levels:
       return ERRORS.UNEXPECTED_INPUT_VALUE
     # Create new emploi
@@ -125,14 +117,14 @@ def define_job_endpoints(app: flask.Flask):
     stu = get_student_or_none()
 
     if not r.is_json:
-      print("Student is invalid")
       return ERRORS.BAD_REQUEST
+
+    if not stu:
+      return ERRORS.STUDENT_NOT_FOUND
 
     data = r.json
 
-    ########### TODO: check parametres emplois
-
-    if not {'job'} <= set(data):
+    if not 'job' in data:
       return ERRORS.MISSING_PARAMETERS
 
     job_id = data['job']
@@ -140,7 +132,7 @@ def define_job_endpoints(app: flask.Flask):
     try:
       job_id = int(data['job'])
     except:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     job: Emploi = Emploi.query.filter_by(id_emploi=job_id).one_or_none()
 
@@ -156,8 +148,7 @@ def define_job_endpoints(app: flask.Flask):
       list_d: List[Domaine] = Domaine.query.filter_by(domaine=domain).all()
 
       if not len(list_d):
-        print("Domain is not correct")
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       job.id_domaine = list_d[0].id_domaine
 
@@ -166,14 +157,13 @@ def define_job_endpoints(app: flask.Flask):
         id_entreprise = int(data['company'])
       except:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_TYPE
 
       # Teste si l'entreprise existe
       e: Entreprise = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
       if not e:
-        print("Company not found")
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.COMPANY_NOT_FOUND
 
       job.id_entreprise = e.id_entreprise
 
@@ -183,7 +173,6 @@ def define_job_endpoints(app: flask.Flask):
       try:
         start = convert_date(start)
       except:
-        print("Start date error")
         db_session.rollback()
         return ERRORS.INVALID_DATE
 
@@ -196,7 +185,6 @@ def define_job_endpoints(app: flask.Flask):
         try:
           end = convert_date(data['end'])
         except:
-          print("End date error")
           db_session.rollback()
           return ERRORS.INVALID_DATE
 
@@ -210,7 +198,7 @@ def define_job_endpoints(app: flask.Flask):
         return ERRORS.INVALID_INPUT_TYPE
       
       #as_describe in client part interfaces.ts joblevels
-      valid_levels = {"technicien", "ingenieur", "doctorant", "alternant"}
+      valid_levels = {"technicien", "ingenieur", "doctorant", "alternant", "other"}
       if level not in valid_levels:
         db_session.rollback()
         return ERRORS.UNEXPECTED_INPUT_VALUE
@@ -225,7 +213,7 @@ def define_job_endpoints(app: flask.Flask):
         return ERRORS.INVALID_INPUT_TYPE
     
       #as_describe in client part interfaces.ts jobtypes
-      valid_contracts = {"cdi", "alternance", "cdd", "these"}
+      valid_contracts = {"cdi", "alternance", "cdd", "these", 'other'}
       if contract not in valid_contracts:
         db_session.rollback()
         return ERRORS.UNEXPECTED_INPUT_VALUE
@@ -253,12 +241,11 @@ def define_job_endpoints(app: flask.Flask):
 
           c = Contact.query.filter_by(id_contact=id_contact).one_or_none()
           if not c:
-            print("Contact not found")
             db_session.rollback()
-            return ERRORS.BAD_REQUEST
+            return ERRORS.CONTACT_NOT_FOUND
         except:
           db_session.rollback()
-          return ERRORS.BAD_REQUEST
+          return ERRORS.INVALID_INPUT_TYPE
 
     stu.refresh_update()
     db_session.commit()
@@ -272,7 +259,7 @@ def define_job_endpoints(app: flask.Flask):
 
     stu: Etudiant = get_student_or_none()
     if not stu:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     return flask.jsonify(Emploi.query.filter_by(id_etu=stu.id_etu).all())
 
@@ -283,7 +270,7 @@ def define_job_endpoints(app: flask.Flask):
     stu = get_student_or_none()
 
     if not stu:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     jobs = Emploi.query.filter_by(id_etu=stu.id_etu, fin=None).order_by(Emploi.debut.desc()).all()
 
@@ -304,7 +291,7 @@ def define_job_endpoints(app: flask.Flask):
     stu = get_student_or_none()
 
     if not stu:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     if not is_teacher() and stu.id_etu != job.id_etu:
       return ERRORS.INVALID_CREDENTIALS
@@ -323,7 +310,7 @@ def define_job_endpoints(app: flask.Flask):
     stu = get_student_or_none()
 
     if not stu:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     if not is_teacher() and stu.id_etu != job.id_etu:
       return ERRORS.INVALID_CREDENTIALS

@@ -66,16 +66,15 @@ def define_domain_endpoints(app: flask.Flask):
     d: Domaine = Domaine.query.filter_by(id_domaine=id_domaine).one_or_none()
 
     if not d:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.DOMAIN_NOT_FOUND
 
     if d.domaine == "other":
-      # TODO meilleure erreur (on ne peut pas modifier other)
       return ERRORS.BAD_REQUEST
 
     search = Domaine.query.filter_by(domaine=domain).one_or_none()
     if search and d.domaine != search.domaine:
-      # TODO error already exists
-      return ERRORS.BAD_REQUEST
+      # TODO message CLIENT error already exists
+      return ERRORS.DOMAIN_ALREADY_EXISTS
 
     d.nom = nom
     d.domaine = domain
@@ -105,7 +104,7 @@ def define_domain_endpoints(app: flask.Flask):
       domain_id = other_domain.id_domaine
 
       if other_domain.id_domaine == id:
-        # TODO meilleure erreur (on ne peut pas effacer other)
+
         return ERRORS.BAD_REQUEST
 
     Stage.query.filter_by(id_domaine=id).update({"id_domaine": domain_id})
@@ -146,7 +145,7 @@ def define_domain_endpoints(app: flask.Flask):
     main_domaine: Domaine = Domaine.query.filter_by(id_domaine=main).one_or_none()
 
     if not main_domaine:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.DOMAIN_NOT_FOUND
 
     children_domains: List[Domaine] = []
     for c in children:
@@ -155,7 +154,7 @@ def define_domain_endpoints(app: flask.Flask):
 
       ent = Domaine.query.filter_by(id_domaine=c).one_or_none()
       if not ent:
-        return ERRORS.RESOURCE_NOT_FOUND
+        return ERRORS.DOMAIN_NOT_FOUND
 
       children_domains.append(ent)
 

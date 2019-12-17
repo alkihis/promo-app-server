@@ -28,8 +28,7 @@ def define_ask_creation_routes(app: flask.Blueprint):
     e = Etudiant.query.filter_by(mail=data['mail']).one_or_none()
 
     if e:
-      # TODO better error
-      return ERRORS.BAD_REQUEST
+      return ERRORS.CONFLICT
 
     mail = data['mail']
 
@@ -55,8 +54,8 @@ def define_ask_creation_routes(app: flask.Blueprint):
     a: AskCreation = AskCreation.query.filter_by(token=token).one_or_none()
 
     if not a:
-      # Token does not exists
-      return ERRORS.BAD_REQUEST
+      # Token does not exists TODO message CLIENT
+      return ERRORS.RESOURCE_NOT_FOUND
 
     etu = create_a_student(data)
 

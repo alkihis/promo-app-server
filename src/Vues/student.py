@@ -69,7 +69,7 @@ def student_routes(app: flask.Flask):
     e: Etudiant = Etudiant.query.filter_by(id_etu=id).one_or_none()
 
     if not e:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.STUDENT_NOT_FOUND
 
     return flask.jsonify(e)
 
@@ -86,7 +86,6 @@ def student_routes(app: flask.Flask):
 
     # Check presence of required arguments
     # Required are first_name, last_name, email, year_in, birthdate 
-    #### TODO check data of student !
     data = r.json
 
     etu = create_a_student(data)
@@ -102,10 +101,13 @@ def student_routes(app: flask.Flask):
   @login_required
   def update_student():
     r = get_request()
-    student: Etudiant = get_student_or_none()
+    student = get_student_or_none()
 
-    if not student or not r.is_json:
+    if not r.is_json:
       return ERRORS.BAD_REQUEST
+
+    if not student:
+      return ERRORS.STUDENT_NOT_FOUND
 
     data = r.json
 
@@ -117,7 +119,6 @@ def student_routes(app: flask.Flask):
       student.prenom = data['first_name']
 
     if 'last_name' in data:
-      # TODO Check validity
       special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['last_name']):
         return ERRORS.INVALID_INPUT_VALUE
@@ -125,19 +126,18 @@ def student_routes(app: flask.Flask):
       student.nom = data['last_name']
 
     if 'year_in' and 'year_out' in data:
-      # TODO Check validity
       try:
         year_in = int(data['year_in'])
       except:
-        ERRORS.INVALID_DATE
+        return ERRORS.INVALID_DATE
       
       try:
         year_out = int(data['year_out'])
       except:
-        ERRORS.INVALID_DATE
+        return ERRORS.INVALID_DATE
                   
       if year_in > year_out:
-        ERRORS.INVALID_DATE
+        return ERRORS.INVALID_DATE
 
       student.annee_entree = data['year_in']
       student.annee_sortie = data['year_out']
@@ -151,7 +151,7 @@ def student_routes(app: flask.Flask):
       except:
         return ERRORS.INVALID_DATE
 
-      if student.annee_sortie and year_in >= student.annee_sortie:
+      if student.annee_sortie and year_in >= int(student.annee_sortie):
         return ERRORS.INVALID_DATE
       
       student.annee_entree = data['year_in']
@@ -165,7 +165,7 @@ def student_routes(app: flask.Flask):
         except:
           return ERRORS.INVALID_DATE
 
-        if student.annee_entree >= year_out:
+        if int(student.annee_entree) >= year_out:
           return ERRORS.INVALID_DATE
 
         student.annee_sortie = data['year_out']
@@ -173,7 +173,7 @@ def student_routes(app: flask.Flask):
     if 'email' in data:
       email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
       if not re.match(email_catch, data['email']):
-        return ERRORS.INVALID_INPUT_VALUE
+        return ERRORS.INVALID_EMAIL
 
       student.mail = data['email']
       
@@ -186,12 +186,12 @@ def student_routes(app: flask.Flask):
           student.cursus_anterieur = data['previous_formation']
         else:
           db_session.rollback()
-          return ERRORS.RESOURCE_NOT_FOUND
+          return ERRORS.FORMATION_NOT_FOUND
       elif data['previous_formation'] is None:
         student.cursus_anterieur = None
       else:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_TYPE
     if 'next_formation' in data:
       if type(data['next_formation']) == int:
         # Check existance of formation
@@ -201,16 +201,16 @@ def student_routes(app: flask.Flask):
           student.reorientation = data['next_formation']
         else:
           db_session.rollback()
-          return ERRORS.RESOURCE_NOT_FOUND
+          return ERRORS.FORMATION_NOT_FOUND
       elif data['next_formation'] is None:
         student.reorientation = None
       else:
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_TYPE
     if 'entered_in' in data:
       if data['entered_in'] != 'M1' and data['entered_in'] != 'M2':
         db_session.rollback()
-        return ERRORS.BAD_REQUEST
+        return ERRORS.UNEXPECTED_INPUT_VALUE
       
       student.entree_en_m1 = data['entered_in'] == 'M1'
     if 'graduated' in data and type(data['graduated']) == bool:
@@ -221,67 +221,13 @@ def student_routes(app: flask.Flask):
     
     return flask.jsonify(student)
 
-
-  @app.route('/student/search')
-  @login_required
-  def search_students():
-    # Define search pages and page length
-    page = 0
-    length = 20
-    r = get_request()
-
-    if r.args.get('page') is not None:
-      try:
-        choosen_page = int(r.args.get('page'))
-
-        if choosen_page >= 0:
-          page = choosen_page
-      except:
-        return ERRORS.BAD_REQUEST
-
-    if r.args.get('count') is not None:
-      try:
-        choosen_count = int(r.args.get('count'))
-
-        if choosen_count > 0 and choosen_count <= 100:
-          length = choosen_count
-      except:
-        return ERRORS.BAD_REQUEST
-
-    # Search for search parameters in request
-    # name, year_in, year_out, previous_formation
-
-    arguments_for_search = []
-
-    # Constructing search
-    if 'name' in r.args:
-      arguments_for_search.append(or_(Etudiant.nom.ilike('%' + r.args['name'] + '%'), Etudiant.prenom.ilike('%' + r.args['name'] + '%')))
-    if 'year_in' in r.args:
-      arguments_for_search.append(Etudiant.annee_entree == r.args['year_in'])
-    if 'year_out' in r.args:
-      arguments_for_search.append(Etudiant.annee_sortie == r.args['year_out'])
-    if 'previous_formation' in r.args:
-      arguments_for_search.append(
-        and_(
-          Etudiant.cursus_anterieur != None, 
-          Formation.nom.ilike('%' + r.args['previous_formation'] + '%'),
-          Etudiant.cursus_anterieur == Formation.id_form
-        )
-      )
-
-    # Make the search
-    results = Etudiant.query.filter(and_(*arguments_for_search)).all()
-
-    return flask.jsonify(results)
-
-
   @app.route('/student/confirm')
   @login_required
   def confirm_actual_data_student():
     student: Etudiant = get_student_or_none()
 
     if not student:
-      return ERRORS.BAD_REQUEST
+      return ERRORS.STUDENT_NOT_FOUND
 
     student.refresh_update()
     db_session.commit()
@@ -330,8 +276,7 @@ def student_routes(app: flask.Flask):
 
     # If $to is not a list, or $to is a empty list, or some $to elements are not strings
     if type(to) is not list or len(to) == 0 or any(map(lambda x: type(x) is not str, to)):
-      print("Addresses must be a list of string")
-      return ERRORS.BAD_REQUEST
+      return ERRORS.INVALID_INPUT_TYPE
 
     # Send the mail...
     send_basic_mail(content, to, obj)
@@ -350,7 +295,7 @@ def student_routes(app: flask.Flask):
     st: Etudiant = Etudiant.query.filter_by(mail=email).one_or_none()
 
     if not st:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.STUDENT_NOT_FOUND
 
     send_welcome_mail(st.id_etu)
     return ""
@@ -372,7 +317,7 @@ def student_routes(app: flask.Flask):
       st: Etudiant = Etudiant.query.filter_by(id_etu=id_etu).one_or_none()
 
       if not st:
-        return ERRORS.RESOURCE_NOT_FOUND
+        return ERRORS.STUDENT_NOT_FOUND
 
       send_ask_relogin_mail(st.id_etu)
 
@@ -413,6 +358,7 @@ def student_routes(app: flask.Flask):
     #   'student': {'name': str, 'surname': str, 'mail': str}, 
     #   'type': 'internship'|'job', 
     #   'ended': bool,
+    #   'related_date': string,
     #   'company': str
     # }
     # On skip les étudiants qui ne veulent pas être visibles
@@ -430,6 +376,10 @@ def student_routes(app: flask.Flask):
 
         companies_for_student.add(emploi.entreprise.nom)
         ended = emploi.fin != None
+        related = str(emploi.debut)
+
+        if ended:
+          related = str(emploi.fin)
 
         available.append({
           'ended': ended,
@@ -438,6 +388,7 @@ def student_routes(app: flask.Flask):
             'surname': student.prenom,
             'mail': student.mail
           },
+          'related_date': related,
           'type': 'job',
           'company': emploi.entreprise.nom
         })
@@ -462,6 +413,7 @@ def student_routes(app: flask.Flask):
             'mail': student.mail
           },
           'type': 'internship',
+          'related_date': stage.promo,
           'company': stage.entreprise.nom
         })
 

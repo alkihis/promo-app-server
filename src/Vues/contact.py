@@ -42,7 +42,7 @@ def define_contact_endpoints(app: flask.Flask):
     ent: Entreprise = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
 
     if not ent:
-      ERRORS.BAD_REQUEST
+      return ERRORS.COMPANY_NOT_FOUND
     
     special_check = r"^[\w_ -]+$" 
     if not re.match(special_check,name):
@@ -50,7 +50,7 @@ def define_contact_endpoints(app: flask.Flask):
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):
-      return ERRORS.INVALID_INPUT_VALUE
+      return ERRORS.INVALID_EMAIL
 
     # Create new contact
     cont = Contact.create(nom=name, mail=mail, id_entreprise=id_entreprise)
@@ -121,7 +121,7 @@ def define_contact_endpoints(app: flask.Flask):
     c: Contact = Contact.query.filter_by(id_contact=id_contact).one_or_none()
 
     if not c:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.CONTACT_NOT_FOUND
     
     if type(name) is not str:
       return ERRORS.INVALID_INPUT_TYPE
@@ -135,7 +135,8 @@ def define_contact_endpoints(app: flask.Flask):
 
     email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
     if not re.match(email_catch, mail):
-      return ERRORS.INVALID_INPUT_VALUE
+      # TODO message CLIENT
+      return ERRORS.INVALID_EMAIL
 
     # Create new contact
     c.mail = mail

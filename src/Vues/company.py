@@ -28,7 +28,7 @@ def define_company_endpoints(app: flask.Flask):
 
     name, city, size, status = data['name'], data['city'], data['size'], data['status']
 
-    ## Search for similar company TODO improve search
+    ## Search for similar company
     f = Entreprise.query.filter(and_(Entreprise.nom.ilike(f"{name}"), Entreprise.ville.ilike(f"{city}"))).all()
     
     if len(f):
@@ -81,13 +81,12 @@ def define_company_endpoints(app: flask.Flask):
       return ERRORS.MISSING_PARAMETERS
 
     if type(data['id']) is not int:
-      
       return ERRORS.INVALID_INPUT_TYPE
 
     e: Entreprise = Entreprise.query.filter_by(id_entreprise=int(data['id'])).one_or_none()
 
     if not e:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.COMPANY_NOT_FOUND
 
     name, city, size, status = data['name'], data['town'], data['size'], data['status']
 
@@ -116,7 +115,7 @@ def define_company_endpoints(app: flask.Flask):
 
     valid_comp_status = {"public", "private"}
     if status not in valid_comp_status:
-      return ERRORS.INVALID_INPUT_TYPE
+      return ERRORS.UNEXPECTED_INPUT_VALUE
     e.statut = status
 
     db_session.commit()
@@ -136,7 +135,7 @@ def define_company_endpoints(app: flask.Flask):
     e = Entreprise.query.filter_by(id_entreprise=id).one_or_none()
 
     if not e:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.COMPANY_NOT_FOUND
 
     return flask.jsonify(e)
 
@@ -165,7 +164,7 @@ def define_company_endpoints(app: flask.Flask):
     main_company: Entreprise = Entreprise.query.filter_by(id_entreprise=main).one_or_none()
 
     if not main_company:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.COMPANY_NOT_FOUND
 
     children_companies: List[Entreprise] = []
     for c in children:
@@ -174,7 +173,7 @@ def define_company_endpoints(app: flask.Flask):
 
       ent = Entreprise.query.filter_by(id_entreprise=c).one_or_none()
       if not ent:
-        return ERRORS.RESOURCE_NOT_FOUND
+        return ERRORS.COMPANY_NOT_FOUND
 
       children_companies.append(ent)
 
@@ -201,7 +200,7 @@ def define_company_endpoints(app: flask.Flask):
     c: Entreprise = Entreprise.query.filter_by(id_entreprise=id).one_or_none()
 
     if not c:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ""
 
     # Delete all manuel
     Stage.query.filter_by(id_entreprise=id).delete()
@@ -212,52 +211,6 @@ def define_company_endpoints(app: flask.Flask):
     db_session.commit()
 
     return ""
-
-
-  @app.route('/company/related')
-  @login_required
-  def find_relative_company():
-    r = get_request()
-    name: str = None
-    city: str = None
-    included = False
-
-    if 'name' in r.args:
-      name = r.args['name']
-    if 'city' in r.args:
-      city = r.args['city']
-    if 'included' in r.args and is_truthy(r.args['included']):
-      included = True
-
-    # get all company
-    company: List[Entreprise] = Entreprise.query.all()
-
-    accepted: List[Tuple[Entreprise, Dict[str, float]]] = []
-
-    # Find contacts that matches the query
-    for f in company:
-      dist_name = 0
-      dist_city = 0
-      if name:
-        dist_name = Levenshtein.ratio(f.nom, name)
-      if city:  
-        dist_city = Levenshtein.ratio(f.ville, city)
-
-      if dist_name >= 0.6 or dist_city >= 0.6:
-        accepted.append((f, {'name': dist_name, 'city': dist_city}))
-        continue
-      
-      # Search for substrings
-      if included:
-        if name and name in f.nom:
-          accepted.append((f, {'name': dist_name, 'city': dist_city}))
-        elif city and city in f.city:
-          accepted.append((f, {'name': dist_name, 'city': dist_city}))
-
-    # Sort the accepted by max between dist_name and dist_location
-    accepted.sort(key=lambda x: max((x[1]['name'], x[1]['city'])), reverse=True)
-
-    return flask.jsonify(accepted)
 
 
   @app.route('/company/map')

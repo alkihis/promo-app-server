@@ -31,7 +31,6 @@ def define_formation_endpoints(app: flask.Flask):
     if type(branch) is not str:
       return ERRORS.INVALID_INPUT_TYPE
 
-    # Check level: must be in ENUM
     if type(level) is not str:
       return ERRORS.INVALID_INPUT_TYPE
     
@@ -40,7 +39,7 @@ def define_formation_endpoints(app: flask.Flask):
       return ERRORS.UNEXPECTED_INPUT_VALUE
 
 
-    ## Search for similar formations TODO improve search
+    ## Search for similar formations 
     f = Formation.query.filter(
       and_(
         Formation.filiere.ilike(f"{branch}"), 
@@ -64,9 +63,8 @@ def define_formation_endpoints(app: flask.Flask):
   @login_required
   def modify_formation():
     r = get_request()
-    stu: Etudiant = get_student_or_none()
 
-    if not stu or not r.is_json:
+    if not is_teacher() or not r.is_json:
       return ERRORS.BAD_REQUEST
 
     data = r.json
@@ -79,13 +77,12 @@ def define_formation_endpoints(app: flask.Flask):
     if type(id_formation) is not int:
       return ERRORS.INVALID_INPUT_TYPE
 
-    # TODO check level: must be in ENUM
+    # Check level: must be in ENUM
     f: Formation = Formation.query.filter_by(id_form=id_formation).one_or_none()
 
     if not f:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.FORMATION_NOT_FOUND
 
-    # TODO check each setting validity
     if type(branch) is not str:
       return ERRORS.INVALID_INPUT_TYPE
     f.filiere = branch
@@ -136,7 +133,7 @@ def define_formation_endpoints(app: flask.Flask):
     main_formation: Formation = Formation.query.filter_by(id_form=main).one_or_none()
 
     if not main_formation:
-      return ERRORS.RESOURCE_NOT_FOUND
+      return ERRORS.FORMATION_NOT_FOUND
 
     children_formations: List[Formation] = []
     for c in children:
@@ -145,7 +142,7 @@ def define_formation_endpoints(app: flask.Flask):
 
       ent = Formation.query.filter_by(id_form=c).one_or_none()
       if not ent:
-        return ERRORS.RESOURCE_NOT_FOUND
+        return ERRORS.FORMATION_NOT_FOUND
 
       children_formations.append(ent)
 

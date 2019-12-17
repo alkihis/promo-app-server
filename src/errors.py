@@ -21,7 +21,15 @@ class Errors:
       12: ('Invalid input', 400),
       13: ('Invalid input type', 400),
       14: ('Input not in expected values', 400),
-      15: ('Ivalid date', 400)
+      15: ('Invalid date', 400),
+      16: ('Student already exists.', 409),
+      17: ('Invalid e-mail', 400),
+      18: ('Domain already exists', 409),
+      19: ('Comapny does not exists.', 404),
+      20: ('Formation does not exists.', 404),
+      21: ('Domain does not exists.', 404),
+      22: ('Contact does not exists.', 404),
+      23: ('Student does not exists.', 404),
     }
 
     # index + 1 is error code
@@ -40,7 +48,15 @@ class Errors:
       "INVALID_INPUT_VALUE",
       "INVALID_INPUT_TYPE",
       "UNEXPECTED_INPUT_VALUE",
-      "INVALID_DATE"
+      "INVALID_DATE",
+      "STUDENT_EXISTS",
+      "INVALID_EMAIL",
+      "DOMAIN_ALREADY_EXISTS",
+      "COMPANY_NOT_FOUND",
+      "FORMATION_NOT_FOUND",
+      "DOMAIN_NOT_FOUND",
+      "CONTACT_NOT_FOUND",
+      "STUDENT_NOT_FOUND",
     )
 
   def error(self, code: ACCEPTED_CODES, data: dict = None):
