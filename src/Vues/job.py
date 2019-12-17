@@ -219,7 +219,7 @@ def define_job_endpoints(app: flask.Flask):
         return ERRORS.BAD_REQUEST
       
       job.niveau = data['level']
-
+    
     if 'contract' in data:
       contract = data['contract']
       #Check contract in ENUM
@@ -228,7 +228,7 @@ def define_job_endpoints(app: flask.Flask):
         return ERRORS.BAD_REQUEST
     
       #as_describe in client part interfaces.ts jobtypes
-      valid_contracts = {"cdi", "alternance", "cdd", "thèse"}
+      valid_contracts = {"cdi", "alternance", "cdd", "these"}
       if contract not in valid_contracts:
         db_session.rollback()
         return ERRORS.BAD_REQUEST
