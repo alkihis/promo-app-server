@@ -926,7 +926,7 @@ def export_all_data_in_csv(stu_ids: List[int] = None):
   return send_file(zip_io, attachment_filename='export.zip', as_attachment=True)
 
 
-def ask_refresh_to_students(min_month = 3):
+def ask_refresh_to_students(min_month = 3, force = False):
   """
     Demande aux étudiants qui n'ont pas actualisé leur profil depuis {min_month}
     de l'actualiser via e-mail.
@@ -940,5 +940,9 @@ def ask_refresh_to_students(min_month = 3):
   students: List[Etudiant] = Etudiant.query.filter(Etudiant.derniere_modification < max_date).all()
   
   for student in students:
+    # Ignore les étudiants ne voulant pas des mails automatiques
+    if not force and not student.recoit_mail_auto:
+      continue
+
     send_ask_relogin_mail(student.id_etu)
 

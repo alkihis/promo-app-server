@@ -50,7 +50,6 @@ def student_routes(app: flask.Flask):
           companies[job['company']['id']] = job['company']
         
         job['company'] = job['company']['id']
-        
 
       for internship in student['internships']:
         if internship['company']['id'] not in companies:
@@ -124,6 +123,9 @@ def student_routes(app: flask.Flask):
         return ERRORS.INVALID_INPUT_VALUE
 
       student.nom = data['last_name']
+
+    if 'get_auto_mail' in data and type(data['get_auto_mail']) is bool:
+      student.recoit_mail_auto = data['get_auto_mail']
 
     if 'year_in' and 'year_out' in data:
       try:

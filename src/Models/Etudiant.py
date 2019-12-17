@@ -15,9 +15,10 @@ class Etudiant(db):
   annee_entree = Column(String, nullable=False)
   annee_sortie = Column(String)
   entree_en_m1 = Column(Boolean, nullable=False)
-  visible = Column(Boolean, nullable=False)
+  visible = Column(Boolean, nullable=False, default=False)
   diplome = Column(Boolean, nullable=False, default=False)
   derniere_modification = Column(DateTime, nullable=False)
+  recoit_mail_auto = Column(Boolean, nullable=False, default=True)
 
   cursus_anterieur = Column(Integer,
     ForeignKey('formation.id_form', ondelete='SET NULL'),
@@ -45,7 +46,8 @@ class Etudiant(db):
     cursus_anterieur: int = None,
     reorientation: int = None,
     diplome: bool = False,
-    visible: bool = True
+    visible: bool = False,
+    recoit_mail_auto: bool = True,
   ):
     return Etudiant(
       nom=nom, 
@@ -58,7 +60,8 @@ class Etudiant(db):
       entree_en_m1=entree_en_m1,
       diplome=diplome,
       derniere_modification=datetime.now(),
-      visible=visible
+      visible=visible,
+      recoit_mail_auto=recoit_mail_auto
     )
 
   def to_json(self, full = False):
@@ -74,6 +77,7 @@ class Etudiant(db):
       'previous_formation': None if not self.cursus_obj else self.cursus_obj.to_json(),
       'next_formation': None if not self.reorientation_obj else self.reorientation_obj.to_json(),
       'last_update': self.derniere_modification,
+      'get_auto_mail': self.recoit_mail_auto,
       'public': self.visible,
     }
 
