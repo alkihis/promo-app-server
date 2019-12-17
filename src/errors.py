@@ -17,7 +17,11 @@ class Errors:
       8: ('Your current credentials does not allow you to access this resource.', 403),
       9: ('You must be logged to do that, or your login credentials are invalid.', 401),
       10: ('Missing required parameters.', 400),
-      11: ('Conflict in unique values.', 409)
+      11: ('Conflict in unique values.', 409),
+      12: ('Invalid input', 400),
+      13: ('Invalid input type', 400),
+      14: ('Input not in expected values', 400),
+      15: ('Ivalid date', 400)
     }
 
     # index + 1 is error code
@@ -33,6 +37,10 @@ class Errors:
       "NOT_LOGGED",
       "MISSING_PARAMETERS",
       "CONFLICT",
+      "INVALID_INPUT_VALUE",
+      "INVALID_INPUT_TYPE",
+      "UNEXPECTED_INPUT_VALUE",
+      "INVALID_DATE"
     )
 
   def error(self, code: ACCEPTED_CODES, data: dict = None):

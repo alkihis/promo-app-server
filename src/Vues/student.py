@@ -112,7 +112,7 @@ def student_routes(app: flask.Flask):
     if 'first_name' in data:
       special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['first_name']):
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       student.prenom = data['first_name']
 
@@ -120,9 +120,27 @@ def student_routes(app: flask.Flask):
       # TODO Check validity
       special_check = r"^[\w_ -]+$" 
       if not re.match(special_check,data['last_name']):
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       student.nom = data['last_name']
+
+    if 'year_in' and 'year_out' in data:
+      # TODO Check validity
+      try:
+        year_in = int(data['year_in'])
+      except:
+        ERRORS.INVALID_DATE
+      
+      try:
+        year_out = int(data['year_out'])
+      except:
+        ERRORS.INVALID_DATE
+                  
+      if year_in > year_out:
+        ERRORS.INVALID_DATE
+
+      student.annee_entree = data['year_in']
+      student.annee_sortie = data['year_out']
 
     if 'public' in data and type(data['public']) is bool:
       student.visible = data['public']
@@ -131,10 +149,10 @@ def student_routes(app: flask.Flask):
       try:
         year_in = int(data['year_in'])
       except:
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_DATE
 
       if student.annee_sortie and year_in >= student.annee_sortie:
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_DATE
       
       student.annee_entree = data['year_in']
 
@@ -145,17 +163,17 @@ def student_routes(app: flask.Flask):
         try:
             year_out = int(data['year_out'])
         except:
-          return ERRORS.BAD_REQUEST
+          return ERRORS.INVALID_DATE
 
         if student.annee_entree >= year_out:
-          return ERRORS.BAD_REQUEST
+          return ERRORS.INVALID_DATE
 
         student.annee_sortie = data['year_out']
 
     if 'email' in data:
       email_catch = r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" 
       if not re.match(email_catch, data['email']):
-        return ERRORS.BAD_REQUEST
+        return ERRORS.INVALID_INPUT_VALUE
 
       student.mail = data['email']
       
