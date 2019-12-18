@@ -54,14 +54,6 @@ from flask_bcrypt import Bcrypt
 app = Flask("promo-app-server", static_url_path="", static_folder="./static")
 bcrypt = Bcrypt(app)
 
-@app.errorhandler(404)
-def normal_404(err):
-  if request.path.startswith('/api'):
-    return ERRORS.PAGE_NOT_FOUND
-  
-  # TODO Return the index.html from React
-  return "", 404
-
 # Database cleaner
 def clean_db():
   from const import DATABASE

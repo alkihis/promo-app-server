@@ -10,3 +10,4 @@ credentials.json
 dump.json
 *.pickle
 .*DS_Store
+static

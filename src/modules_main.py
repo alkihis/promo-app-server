@@ -1,6 +1,8 @@
-from flask import jsonify, request, Blueprint
+from flask import jsonify, request, Blueprint, send_from_directory
 from flask_cors import CORS
 from server import app, db_session
+import os
+from errors import ERRORS
 
 if __name__ == "__main__":
   print("Please run app.py instead. This should not be the main file.")
@@ -62,16 +64,22 @@ app.register_blueprint(bp, url_prefix='/api')
 def shutdown_session(e):
     db_session.remove()
 
-#### Main, route
-@app.route('/')
-def main_app():
-  return jsonify(
-    success=True,
-    path=request.path,
-    method=request.method,
-    query_string=request.query_string.decode('utf-8'),
-    qs_data=request.args,
-    form_data=request.form,
-    json_form_data=request.json,
-    attached_files=request.files
-  )
+
+#### Serve the react app
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+  if path != "" and os.path.exists(app.static_folder + '/' + path):
+    # Serve the images/static css...
+    return send_from_directory(app.static_folder, path)
+  else:
+    # Serve root
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.errorhandler(404)
+def normal_404(err):
+  if request.path.startswith('/api'):
+    return ERRORS.PAGE_NOT_FOUND
+  
+  # Serve the react folder (404 is handled by React)
+  return send_from_directory(app.static_folder, 'index.html')
