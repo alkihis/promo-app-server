@@ -1,7 +1,7 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
 CREATE TABLE Etudiant (
-  id_etu INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_etu INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   nom TEXT NOT NULL,
   prenom TEXT NOT NULL,
   mail TEXT NOT NULL,
@@ -10,6 +10,8 @@ CREATE TABLE Etudiant (
   annee_sortie TEXT,
   entree_en_m1 BOOLEAN NOT NULL,
   diplome BOOLEAN NOT NULL DEFAULT FALSE,
+  visible BOOLEAN NOT NULL DEFAULT FALSE,
+  recoit_mail_auto BOOLEAN NOT NULL DEFAULT TRUE,
   
   cursus_anterieur INTEGER,
   reorientation INTEGER,
@@ -19,14 +21,14 @@ CREATE TABLE Etudiant (
 );
 
 CREATE TABLE Formation (
-  id_form INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_form INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   lieu TEXT NOT NULL,
   niveau TEXT NOT NULL, -- ENUM: must be "Licence", "Master", "Doctorat", "Autre"
   filiere TEXT NOT NULL
 );
 
 CREATE TABLE Contact (
-  id_contact INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_contact INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   nom TEXT NOT NULL,
   mail TEXT NOT NULL,
 
@@ -36,20 +38,23 @@ CREATE TABLE Contact (
 );
 
 CREATE TABLE Entreprise (
-  id_entreprise INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_entreprise INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   nom TEXT NOT NULL,
   ville TEXT NOT NULL,
   taille TEXT NOT NULL, -- ENUM: Must be "small" , "medium", "big", "very_big"
-  statut TEXT NOT NULL -- ENUM: Must be "PUBLIC" or "PRIVATE"
+  statut TEXT NOT NULL, -- ENUM: Must be "PUBLIC" or "PRIVATE"
+  lat TEXT NOT NULL,
+  lng TEXT NOT NULL
 );
 
 CREATE TABLE Domaine (
-  id_domaine INTEGER PRIMARY KEY AUTOINCREMENT,
-  domaine TEXT NOT NULL
+  id_domaine INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  domaine TEXT NOT NULL,
+  nom TEXT NOT NULL
 );
 
 CREATE TABLE Stage (
-  id_stage INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_stage INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 
   promo TEXT NOT NULL,
 
@@ -65,7 +70,7 @@ CREATE TABLE Stage (
 );
 
 CREATE TABLE Emploi (
-  id_emploi INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_emploi INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   id_etu INTEGER NOT NULL,
   id_contact INTEGER,
   id_domaine INTEGER NOT NULL,
@@ -75,7 +80,6 @@ CREATE TABLE Emploi (
   fin TEXT, -- DATETIME or "now" or null si pas fini
   contrat TEXT NOT NULL, -- ENUM "CDD" "CDI" "These" "Alternance"
   salaire INTEGER, -- Peut être non précisé
-  -- is_public BOOLEAN NOT NULL, -- Déplacé dans Entreprise
   niveau TEXT NOT NULL,
 
   FOREIGN KEY(id_etu) REFERENCES Etudiant(id_etu) ON DELETE CASCADE,
