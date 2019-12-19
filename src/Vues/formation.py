@@ -6,7 +6,6 @@ from helpers import is_teacher, get_request, get_user, convert_date, is_truthy
 from errors import ERRORS
 from server import db_session
 from sqlalchemy import and_
-import Levenshtein
 from typing import List, Tuple, Dict
 from models_helpers import get_student_or_none
 

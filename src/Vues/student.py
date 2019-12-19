@@ -7,7 +7,7 @@ from Models.Stage import Stage
 from Models.Token import Token
 from flask_login import login_required
 from helpers import is_teacher, get_request, get_user, create_token_for, convert_date, is_truthy
-from models_helpers import get_student_or_none, send_basic_mail, create_a_student, send_welcome_mail, send_ask_relogin_mail
+from models_helpers import get_student_or_none, send_basic_mail, create_a_student, send_welcome_mail, send_ask_relogin_mail, student_object, teacher_login_required
 from errors import ERRORS
 from server import db_session, engine
 from sqlalchemy import and_, or_
@@ -74,10 +74,8 @@ def student_routes(app: flask.Flask):
 
   @app.route('/student/create', methods=['POST'])
   @login_required
+  @teacher_login_required
   def create_student():
-    if not is_teacher():
-      return ERRORS.INVALID_CREDENTIALS
-
     # Check for content type
     r = get_request()
     if not r.is_json:
@@ -225,16 +223,12 @@ def student_routes(app: flask.Flask):
 
   @app.route('/student/confirm')
   @login_required
-  def confirm_actual_data_student():
-    student: Etudiant = get_student_or_none()
-
-    if not student:
-      return ERRORS.STUDENT_NOT_FOUND
-
-    student.refresh_update()
+  @student_object
+  def confirm_actual_data_student(stu: Etudiant):
+    stu.refresh_update()
     db_session.commit()
 
-    return flask.jsonify(student)
+    return flask.jsonify(stu)
 
 
   @app.route('/student/<int:id>', methods=["DELETE"])

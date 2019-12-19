@@ -25,6 +25,35 @@ import os
 import jinja2
 from gmail import GMAIL_SERVICE, send_message, create_message, MASTER_ADDRESS
 from const import SITE_URL, STATIC_SITE_URL
+from functools import wraps
+
+
+def teacher_login_required(f):
+  @wraps(f)
+  def decorated_function(*args, **kwargs):
+    if not is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+    return f(*args, **kwargs)
+  return decorated_function
+
+
+def student_login_required(f):
+  @wraps(f)
+  def decorated_function(*args, **kwargs):
+    if is_teacher():
+      return ERRORS.INVALID_CREDENTIALS
+    return f(*args, **kwargs)
+  return decorated_function
+
+def student_object(f):
+  @wraps(f)
+  def decorated_function(*args, **kwargs):
+    stu = get_student_or_none()
+    if not stu:
+      return ERRORS.STUDENT_NOT_FOUND
+    return f(*args, **{**kwargs, 'stu': stu})
+  return decorated_function
+
 
 def get_etu_object_for_logged_user() -> Optional[Etudiant]:
   user = get_user()
@@ -838,7 +867,7 @@ def company_as_csv(entreprise: Entreprise = None):
   ]))
 
 
-def export_all_data_in_csv(stu_ids: List[int] = None):
+def export_all_data_in_csv(stu_ids: List[int] = None, as_file: str = None):
   if stu_ids:
     students: List[Etudiant] = Etudiant.query.filter(Etudiant.id_etu.in_(stu_ids)).all()
   else: 
@@ -881,7 +910,11 @@ def export_all_data_in_csv(stu_ids: List[int] = None):
 
   # On a tous les stages, emplois, toutes les entreprises et tous les contacts
   # Crée le csv
-  zip_io = BytesIO()
+  if as_file:
+    zip_io = as_file
+  else:
+    zip_io = BytesIO()
+
   zip_file = zipfile.ZipFile(zip_io, 'w', compression=zipfile.ZIP_DEFLATED)
 
   tmp_csv = student_as_csv(full=True) + "\n"
@@ -922,6 +955,10 @@ def export_all_data_in_csv(stu_ids: List[int] = None):
   zip_file.close()
 
   zip_io.seek(0)
+
+  if as_file:
+    # ZIPFile écrit déjà sur le disque
+    return
 
   return send_file(zip_io, attachment_filename='export.zip', as_attachment=True)
 

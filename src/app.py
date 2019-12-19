@@ -27,16 +27,22 @@ if program_args.locations:
   init_location()
 
 if program_args.export:
-  from models_helpers import global_export
-  global_export(program_args.export)
+  from models_helpers import export_all_data_in_csv
+  export_all_data_in_csv(program_args.export)
+  print("Les données ont été exportées")
+  exit(0)
 
 if program_args.upgrade:
   from models_helpers import import_legacy_db
   import_legacy_db(program_args.upgrade)
+  print("La base de données a été importée")
+  exit(0)
 
 if program_args.importcsv:
   from models_helpers import import_students_from_file
   import_students_from_file(program_args.importcsv)
+  print("Les données ont été importées")
+  exit(0)
 
 if program_args.password:
   psw1 = getpass.getpass(prompt='Saisissez un nouveau mot de passe: ', stream=None).strip()

@@ -10,7 +10,6 @@ from helpers import is_teacher, get_request, is_truthy
 from errors import ERRORS
 from server import db_session
 from typing import List, Tuple, Dict
-from sqlalchemy import func
 from datetime import date
 
 def define_teacher_endpoints(app: flask.Blueprint):
