@@ -125,7 +125,7 @@ def student_routes(app: flask.Flask):
     if 'get_auto_mail' in data and type(data['get_auto_mail']) is bool:
       student.recoit_mail_auto = data['get_auto_mail']
 
-    if 'year_in' and 'year_out' in data:
+    if 'year_in' and 'year_out' in data and data['year_out'] is not None:
       try:
         year_in = int(data['year_in'])
       except:

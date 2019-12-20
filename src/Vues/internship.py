@@ -33,8 +33,12 @@ def define_internship_endpoints(app: flask.Flask):
     promo_year, id_entreprise, domain, id_contact = data['promo_year'], data['company'], data['domain'], data['contact']
     
     # Check if promo_year is okay for this student !
-    if not int(stu.annee_entree) <= int(data['promo_year']) <= int(stu.annee_sortie):
-      return ERRORS.INVALID_DATE
+    if stu.annee_sortie:
+      if not int(stu.annee_entree) <= int(data['promo_year']) <= int(stu.annee_sortie):
+        return ERRORS.INVALID_DATE
+    else:
+      if not int(stu.annee_entree) <= int(data['promo_year']):
+        return ERRORS.INVALID_DATE
 
     ## Check company id
     ent: Entreprise = Entreprise.query.filter_by(id_entreprise=id_entreprise).one_or_none()
